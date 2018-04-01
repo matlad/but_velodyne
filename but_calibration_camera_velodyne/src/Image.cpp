@@ -7,7 +7,10 @@
 
 #include "but_calibration_camera_velodyne/Image.h"
 #include "opencv2/imgproc/imgproc.hpp"
+//#include "opencv2/tracker.hpp"
 #include <algorithm>
+#include <rosconsole/macros_generated.h>
+#include <ros/ros.h>
 
 using namespace std;
 using namespace cv;
@@ -71,6 +74,7 @@ Mat Image::computeEdgeImage()
 
   /// Total Gradient (approximate)
   addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, edges);
+
   return edges;
 }
 
@@ -138,10 +142,12 @@ bool order_X(const Vec3f &p1, const Vec3f &p2)
 {
   return p1.val[0] < p2.val[0];
 }
+
 bool order_Y(const Vec3f &p1, const Vec3f &p2)
 {
   return p1.val[1] < p2.val[1];
 }
+
 bool Image::detect4Circles(float canny_thresh, float center_thresh, vector<Point2f> &centers, vector<float> &radiuses)
 {
   vector<Vec3f> circles;
@@ -151,15 +157,18 @@ bool Image::detect4Circles(float canny_thresh, float center_thresh, vector<Point
   Mat src_gray;
   this->img.copyTo(src_gray);
 
+  namedWindow("ROI");
+  Rect2f r = selectROI("ROI",src_gray);
+  destroyWindow("ROI");
+
+  // Crop image
+  Mat imCorp = src_gray(r);
+
   for (int thresh = center_thresh; circles.size() < 4 && thresh > 10; thresh -= 5)
   {
-    HoughCircles(src_gray, circles, CV_HOUGH_GRADIENT, 1, src_gray.rows / 8, canny_thresh, thresh, 0, 0);
+    HoughCircles(imCorp, circles, CV_HOUGH_GRADIENT, 1, imCorp.rows / 8, canny_thresh, thresh, 0, 0);
   }
 
-  if (circles.size() != 4)
-  {
-    return false;
-  }
 
   sort(circles.begin(), circles.end(), order_Y);
   sort(circles.begin(), circles.begin() + 2, order_X);
@@ -167,12 +176,13 @@ bool Image::detect4Circles(float canny_thresh, float center_thresh, vector<Point
 
   for (size_t i = 0; i < circles.size(); i++)
   {
-    centers.push_back(Point2f(circles[i][0], circles[i][1]));
+    centers.push_back(Point2f(r.x + circles[i][0], r.y + circles[i][1]));
     radiuses.push_back(cvRound(circles[i][2]));
   }
 
   /// Draw the circles detected
-  /*
+
+
    Mat src_rgb;
    cvtColor(img, src_rgb, CV_GRAY2BGR );
    vector<Scalar> colors;
@@ -181,9 +191,8 @@ bool Image::detect4Circles(float canny_thresh, float center_thresh, vector<Point
    colors.push_back(Scalar(0,0,255));
    colors.push_back(Scalar(255,255,255));
    for (size_t i = 0; i < circles.size(); i++) {
-   centers.push_back(Point2f(circles[i][0], circles[i][1]));
 
-   Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+   Point2f center(r.x + circles[i][0], r.y + circles[i][1]);
    int radius = cvRound(circles[i][2]);
    // circle center
    circle(src_rgb, center, 3, Scalar(0, 255, 0), -1, 8, 0);
@@ -191,10 +200,17 @@ bool Image::detect4Circles(float canny_thresh, float center_thresh, vector<Point
    circle(src_rgb, center, radius, colors[i], 3, 8, 0);
    cerr << i+1 << ". circle S("<<center.x<<","<<center.y<<"); r="<<radius << endl;
    }
-   namedWindow("Hough Circle Transform Demo", CV_WINDOW_AUTOSIZE);
-   imshow("Hough Circle Transform Demo", src_rgb);
-   waitKey(0);
-   */
+
+//   namedWindow("Hough Circle Transform demo", CV_WINDOW_AUTOSIZE);
+//   imshow("Hough Circle Transform demo", src_rgb);
+//   waitKey(0);
+//   destroyWindow("Hough Circle Transform demo");
+
+	if (circles.size() != 4)
+	{
+        ROS_INFO_STREAM("Fail found " << circles.size() << "circles expected 4");
+		return false;
+	}
 
   return true;
 }

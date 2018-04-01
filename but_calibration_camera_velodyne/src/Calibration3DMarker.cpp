@@ -22,17 +22,28 @@ Calibration3DMarker::Calibration3DMarker(cv::Mat _frame_gray, cv::Mat _P, ::Poin
 {
 
   // ---------------- GET PLANE ----------------
-
+  ROS_DEBUG("GET PLANE");
   Velodyne::Velodyne scan(pc);
+	PointCloud<PointXYZ>::Ptr scan_xyz(scan.toPointsXYZ());
+	//Velodyne::Velodyne::view(scan_xyz,"scan");
+  scan.save("/media/Linux_Data/Code/school/FIT_BAK_FILES/scan.pcd"); //DEBUG
   scan.getRings();
+  scan.save("/media/Linux_Data/Code/school/FIT_BAK_FILES/rings.pcd"); //DEBUG
   scan.intensityByRangeDiff();
+  scan.save("/media/Linux_Data/Code/school/FIT_BAK_FILES/scandiff.pcd"); //DEBUG
   PointCloud<Velodyne::Point> visible_cloud;
   scan.project(P, Rect(0, 0, 640, 480), &visible_cloud);
 
   Velodyne::Velodyne visible_scan(visible_cloud);
-  visible_scan.normalizeIntensity();
-  Velodyne::Velodyne thresholded_scan = visible_scan.threshold(0.1);
+	PointCloud<PointXYZ>::Ptr visible_scan_xyz(visible_scan.toPointsXYZ());
+	//Velodyne::Velodyne::view(visible_scan_xyz,"visible Scan");
 
+
+  visible_scan.save("/media/Linux_Data/Code/school/FIT_BAK_FILES/visible_scan.pcd"); //DEBUG
+  visible_scan.normalizeIntensity();
+  visible_scan.save("/media/Linux_Data/Code/school/FIT_BAK_FILES/visible_scan-intensity.pcd"); //DEBUG
+  Velodyne::Velodyne thresholded_scan = visible_scan.threshold(0.1);
+  thresholded_scan.save("/media/Linux_Data/Code/school/FIT_BAK_FILES/thresholded_scan.pcd"); //DEBUG
   PointCloud<PointXYZ>::Ptr xyz_cloud_ptr(thresholded_scan.toPointsXYZ());
 
   SampleConsensusModelPlane<PointXYZ>::Ptr model_p(
@@ -47,6 +58,7 @@ Calibration3DMarker::Calibration3DMarker(cv::Mat _frame_gray, cv::Mat _P, ::Poin
   copyPointCloud<PointXYZ>(*xyz_cloud_ptr, inliers_indicies, plane);
 
   // ---------------- REMOVE LINES ----------------
+  ROS_DEBUG("REMOVE LINES");
 
   for (int i = 0; i < 2; i++)
   {
@@ -65,6 +77,7 @@ Calibration3DMarker::Calibration3DMarker(cv::Mat _frame_gray, cv::Mat _P, ::Poin
     PointCloud<PointXYZ> plane_no_line;
     remove_inliers(*plane_ptr, line_inliers, plane_no_line);
     plane = plane_no_line;
+   // Velodyne::Velodyne::view(plane_ptr,"remover lines");
   }
 
 }
@@ -77,6 +90,12 @@ bool Calibration3DMarker::detectCirclesInImage(vector<Point2f> &centers, vector<
                                  centers, radiuses);
 }
 
+/**
+ * @brief
+ * @param [out]centers středy detekovyných kruhů
+ * @param [out]radiuses poloměry detekovaných kruhů
+ * @return
+ */
 bool Calibration3DMarker::detectCirclesInPointCloud(vector<Point3f> &centers, vector<float> &radiuses)
 {
   PointCloud<PointXYZ>::Ptr detection_cloud(new PointCloud<PointXYZ>);

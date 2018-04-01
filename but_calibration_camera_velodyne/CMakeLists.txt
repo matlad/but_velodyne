@@ -26,11 +26,11 @@ add_definitions(${PCL_DEFINITIONS})
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_executable(calibration src/calibration-node.cpp src/Image.cpp src/Velodyne.cpp src/Similarity.cpp src/Calibration3DMarker.cpp ) 
+add_executable(calibration src/calibration-node.cpp src/Image.cpp src/Velodyne.cpp src/Similarity.cpp src/Calibration3DMarker.cpp src/my_pinhole_camera_model.cpp src/Calibrator.cpp include/but_calibration_camera_velodyne/Calibrator.h src/RosCalibratorWrapper.cpp include/but_calibration_camera_velodyne/RosCalibratorWrapper.h src/CameraParameters.cpp include/but_calibration_camera_velodyne/CameraParameters.h include/but_calibration_camera_velodyne/macros.h)
 target_link_libraries(calibration ${PCL_LIBRARIES}) 
 target_link_libraries(calibration ${catkin_LIBRARIES})
 
-add_executable(coloring src/coloring-node.cpp src/Image.cpp src/Velodyne.cpp )
+add_executable(coloring src/coloring-node.cpp src/Image.cpp src/Velodyne.cpp src/Colorizer.cpp launch/Colorizer.h include/but_calibration_camera_velodyne/macros.h)
 target_link_libraries(coloring ${PCL_LIBRARIES}) 
 target_link_libraries(coloring ${catkin_LIBRARIES})
 

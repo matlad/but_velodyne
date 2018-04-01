@@ -58,6 +58,8 @@ public:
       for (int col = 0; col <= 1; col++)
       {
         cv::Vec3b c = rgb.at<cv::Vec3b>(cv::Point(x + col, y + row));
+
+		  // RGB
         for (int i = 0; i < 3; i++)
         {
           color_i.val[i] += c.val[i];
