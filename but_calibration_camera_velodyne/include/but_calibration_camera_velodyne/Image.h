@@ -11,7 +11,7 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 
-namespace but_calibration_camera_velodyne
+namespace But::calibration_camera_velodyne
 {
 
 namespace Image
@@ -88,7 +88,9 @@ public:
   // CV_32SC1 Mat with segment indexes
   cv::Mat segmentation(int segments);
 
-protected:
+  cv::Mat & getImg();
+
+ protected:
   cv::Mat img;
 
   static float const gamma;

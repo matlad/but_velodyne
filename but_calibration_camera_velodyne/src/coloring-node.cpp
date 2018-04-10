@@ -10,7 +10,7 @@
 #include <boost/foreach.hpp>
 
 #include "opencv2/opencv.hpp"
-#include "../launch/Colorizer.h"
+#include "but_calibration_camera_velodyne/Colorizer.h"
 
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>

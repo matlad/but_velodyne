@@ -25,9 +25,9 @@
 
 #include <but_calibration_camera_velodyne/Velodyne.h>
 #include <but_calibration_camera_velodyne/Image.h>
-#include <but_calibration_camera_velodyne/Calibration.h>
 
-namespace but_calibration_camera_velodyne
+
+namespace But::calibration_camera_velodyne
 {
 
 class Calibration3DMarker

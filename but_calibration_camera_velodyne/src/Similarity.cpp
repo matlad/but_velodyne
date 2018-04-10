@@ -10,7 +10,7 @@
 using namespace std;
 using namespace cv;
 
-namespace but_calibration_camera_velodyne
+namespace But::calibration_camera_velodyne
 {
 
 void Similarity::computeEntropies()

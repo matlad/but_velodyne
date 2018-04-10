@@ -26,11 +26,61 @@ add_definitions(${PCL_DEFINITIONS})
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_executable(calibration src/calibration-node.cpp src/Image.cpp src/Velodyne.cpp src/Similarity.cpp src/Calibration3DMarker.cpp src/my_pinhole_camera_model.cpp src/Calibrator.cpp include/but_calibration_camera_velodyne/Calibrator.h src/RosCalibratorWrapper.cpp include/but_calibration_camera_velodyne/RosCalibratorWrapper.h src/CameraParameters.cpp include/but_calibration_camera_velodyne/CameraParameters.h include/but_calibration_camera_velodyne/macros.h)
+add_executable(calibrationNonRos
+        src/Image.cpp
+        include/but_calibration_camera_velodyne/Image.h
+        src/Velodyne.cpp
+        include/but_calibration_camera_velodyne/Velodyne.h
+        src/Similarity.cpp
+        include/but_calibration_camera_velodyne/Similarity.h
+        src/Calibration3DMarker.cpp
+        include/but_calibration_camera_velodyne/Calibration3DMarker.h
+        src/Calibrator.cpp
+        include/but_calibration_camera_velodyne/Calibrator.h
+        src/RosCalibratorWrapper.cpp
+        include/but_calibration_camera_velodyne/RosCalibratorWrapper.h
+        src/CameraParameters.cpp
+        include/but_calibration_camera_velodyne/CameraParameters.h
+        src/Calibration6DoF.cpp
+        include/but_calibration_camera_velodyne/Calibration6DoF.h
+        include/but_calibration_camera_velodyne/macros.h
+        src/calibration.cpp)
+target_link_libraries(calibrationNonRos ${PCL_LIBRARIES})
+target_link_libraries(calibrationNonRos ${catkin_LIBRARIES})
+
+add_executable(calibration
+        src/calibration-node.cpp
+        src/Image.cpp
+        include/but_calibration_camera_velodyne/Image.h
+        src/Velodyne.cpp
+        include/but_calibration_camera_velodyne/Velodyne.h
+        src/Similarity.cpp
+        include/but_calibration_camera_velodyne/Similarity.h
+        src/Calibration3DMarker.cpp
+        include/but_calibration_camera_velodyne/Calibration3DMarker.h
+        src/Calibrator.cpp
+        include/but_calibration_camera_velodyne/Calibrator.h
+        src/RosCalibratorWrapper.cpp
+        include/but_calibration_camera_velodyne/RosCalibratorWrapper.h
+        src/CameraParameters.cpp
+        include/but_calibration_camera_velodyne/CameraParameters.h
+        src/Calibration6DoF.cpp
+        include/but_calibration_camera_velodyne/Calibration6DoF.h
+        include/but_calibration_camera_velodyne/macros.h
+        )
 target_link_libraries(calibration ${PCL_LIBRARIES}) 
 target_link_libraries(calibration ${catkin_LIBRARIES})
 
-add_executable(coloring src/coloring-node.cpp src/Image.cpp src/Velodyne.cpp src/Colorizer.cpp launch/Colorizer.h include/but_calibration_camera_velodyne/macros.h)
+add_executable(coloring
+        src/coloring-node.cpp
+        src/Image.cpp
+        include/but_calibration_camera_velodyne/Image.h
+        src/Velodyne.cpp
+        include/but_calibration_camera_velodyne/Velodyne.h
+        src/Colorizer.cpp
+        include/but_calibration_camera_velodyne/Colorizer.h
+        include/but_calibration_camera_velodyne/macros.h
+        )
 target_link_libraries(coloring ${PCL_LIBRARIES}) 
 target_link_libraries(coloring ${catkin_LIBRARIES})
 

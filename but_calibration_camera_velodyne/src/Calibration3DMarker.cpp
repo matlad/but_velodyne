@@ -14,36 +14,23 @@ using namespace cv;
 using namespace pcl;
 using namespace ros;
 
-namespace but_calibration_camera_velodyne {
+namespace But::calibration_camera_velodyne {
 
 Calibration3DMarker::Calibration3DMarker(cv::Mat _frame_gray, cv::Mat _P, ::PointCloud<Velodyne::Point> _pc,
                                          float _circ_distance, float _radius) :
     frame_gray(_frame_gray), P(_P), pc(_pc), circ_distance(_circ_distance), radius(_radius)
 {
 
-  // ---------------- GET PLANE ----------------
-  ROS_DEBUG("GET PLANE");
   Velodyne::Velodyne scan(pc);
-	PointCloud<PointXYZ>::Ptr scan_xyz(scan.toPointsXYZ());
-	//Velodyne::Velodyne::view(scan_xyz,"scan");
-  scan.save("/media/Linux_Data/Code/school/FIT_BAK_FILES/scan.pcd"); //DEBUG
-  scan.getRings();
-  scan.save("/media/Linux_Data/Code/school/FIT_BAK_FILES/rings.pcd"); //DEBUG
+  // Identifikace vertikálních hran ve scanu
   scan.intensityByRangeDiff();
-  scan.save("/media/Linux_Data/Code/school/FIT_BAK_FILES/scandiff.pcd"); //DEBUG
   PointCloud<Velodyne::Point> visible_cloud;
+  // Výřez
   scan.project(P, Rect(0, 0, 640, 480), &visible_cloud);
-
   Velodyne::Velodyne visible_scan(visible_cloud);
-	PointCloud<PointXYZ>::Ptr visible_scan_xyz(visible_scan.toPointsXYZ());
-	//Velodyne::Velodyne::view(visible_scan_xyz,"visible Scan");
-
-
-  visible_scan.save("/media/Linux_Data/Code/school/FIT_BAK_FILES/visible_scan.pcd"); //DEBUG
   visible_scan.normalizeIntensity();
-  visible_scan.save("/media/Linux_Data/Code/school/FIT_BAK_FILES/visible_scan-intensity.pcd"); //DEBUG
+  // Odfiltrování bodů které nejsou hranou
   Velodyne::Velodyne thresholded_scan = visible_scan.threshold(0.1);
-  thresholded_scan.save("/media/Linux_Data/Code/school/FIT_BAK_FILES/thresholded_scan.pcd"); //DEBUG
   PointCloud<PointXYZ>::Ptr xyz_cloud_ptr(thresholded_scan.toPointsXYZ());
 
   SampleConsensusModelPlane<PointXYZ>::Ptr model_p(

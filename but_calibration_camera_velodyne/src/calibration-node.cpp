@@ -7,7 +7,6 @@
 
 #include <ros/ros.h>
 
-#include <but_calibration_camera_velodyne/my_pinhole_camera_model.h>
 
 #include <sensor_msgs/PointCloud2.h>
 
@@ -27,7 +26,7 @@ using namespace std;
 using namespace ros;
 using namespace message_filters;
 using namespace pcl;
-using namespace but_calibration_camera_velodyne;
+using namespace But::calibration_camera_velodyne;
 
 Mat projection_matrix;
 Mat frame_rgb, frame_r_rgb, undisort2, diff;

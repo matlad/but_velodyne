@@ -6,7 +6,7 @@
  */
 #include <cv_bridge/cv_bridge.h>
 #include <Eigen/Dense>
-#include "../launch/Colorizer.h"
+#include "but_calibration_camera_velodyne/Colorizer.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -38,8 +38,8 @@
 using namespace std;
 using namespace cv;
 using namespace pcl;
-using namespace but_calibration_camera_velodyne;
-using namespace but_calibration_camera_velodyne::Velodyne;
+using namespace But::calibration_camera_velodyne;
+using namespace But::calibration_camera_velodyne::Velodyne;
 
 using namespace But::calibration_camera_velodyne;
 

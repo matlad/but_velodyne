@@ -10,27 +10,43 @@
 #include <cstdlib>
 #include <cstdio>
 #include <but_calibration_camera_velodyne/Similarity.h>
-//#include "opencv2/opencv.hpp"
 
 namespace But::calibration_camera_velodyne {
 class Calibration6DoF {
  public:
+  /**
+   * @brief vektor six degras of freadom
+   * transtation x y z
+   * a rotation x y z v
+   * tomto pořadí
+   */
   std::vector<float> DoF;
 
+  /**
+   * @brief Skoré jak moc je tato kalibrace přesná
+   */
   float value; // NaN = wrong calibration
 
  public:
-  Calibration6DoF(float x,
-                  float y,
-                  float z,
-                  float x_r,
-                  float y_r,
-                  float z_r,
-                  float val) {
+  Calibration6DoF(float x, float y, float z,
+                  float x_r, float y_r, float z_r,
+                  float val
+  ) {
     set(x, y, z, x_r, y_r, z_r, val);
   }
 
-  Calibration6DoF() {
+  /**
+   * @param tvec
+   * @param rvec
+   * @param val
+   * @see ::set(cv::Mat tvec, cv::Mat rvec, float val)
+   */
+  Calibration6DoF(cv::Mat tvec, cv::Mat rvec, float val)
+  {
+    set(tvec,rvec,val);
+  };
+
+  Calibration6DoF(){
     value = 0;
     DoF.resize(6, 0);
   }
@@ -43,13 +59,8 @@ class Calibration6DoF {
     return !std::isnan(value);
   }
 
-  void set(float x,
-           float y,
-           float z,
-           float x_r,
-           float y_r,
-           float z_r,
-           float val) {
+  void set(float x, float y, float z, float x_r, float y_r, float z_r, float val)
+  {
     value = val;
 
     DoF.clear();
@@ -61,9 +72,20 @@ class Calibration6DoF {
     DoF.push_back(z_r);
   }
 
-  void set() {
+  /**
+   * @brief nastaví 6DoF
+   * @param tvec matice 1x3 pro transformaci x,y,z
+   * @param rvec matice 1x3 pro rotaci x,y,z
+   * @param val score
+   */
+  void set(cv::Mat tvec, cv::Mat rvec, float val);
 
-  }
+  float tX();
+  float tY();
+  float tZ();
+  float rX();
+  float rY();
+  float rZ();
 
   bool operator<=(Calibration6DoF &other) {
     return this->value <= other.value;

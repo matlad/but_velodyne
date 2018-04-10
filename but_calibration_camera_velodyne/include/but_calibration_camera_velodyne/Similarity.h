@@ -10,6 +10,7 @@
 
 #include "opencv2/opencv.hpp"
 #include "opencv2/highgui/highgui.hpp"
+#include "macros.h"
 
 #include <vector>
 #include <map>
@@ -24,7 +25,7 @@
 #include <but_calibration_camera_velodyne/Image.h>
 #include <but_calibration_camera_velodyne/Velodyne.h>
 
-namespace but_calibration_camera_velodyne {
+namespace But::calibration_camera_velodyne {
 
 class Similarity
 {
@@ -142,19 +143,34 @@ public:
     return projectionError(segmentation, segments, P, verbose);
   }
 
+  /**
+   * @brief cross corelation
+   * @param img
+   * @param scan
+   * @param P
+   * @return
+   */
   float static edgeSimilarity(Image::Image &img, Velodyne::Velodyne &scan, cv::Mat &P)
   {
+    cv::Mat color;
+    cv::cvtColor(img.getImg(), color, cv::COLOR_GRAY2BGR);
+
     cv::Rect frame(cv::Point(0, 0), img.size());
     float CC = 0;
-    for (::pcl::PointCloud<Velodyne::Point>::iterator pt = scan.begin(); pt < scan.end(); pt++)
+    for (auto pt :scan)
     {
-      cv::Point xy = Velodyne::Velodyne::project(*pt, P);
+      cv::Point xy = Velodyne::Velodyne::project(pt, P);
 
-      if (pt->z > 0 && xy.inside(frame))
+	  if (pt.z > 0 && xy.inside(frame))
       {
-        CC += img.at(xy) * pt->intensity;
+        color.at<cv::Vec3b>(xy)[0] = 0;
+        assert(pt.intensity <= 1);
+        color.at<cv::Vec3b>(xy)[1] = pt.intensity < 0.02 ? 255 : 0;
+		color.at<cv::Vec3b>(xy)[2] = pt.intensity < 0.02 ? 0 : 255;
+        CC += img.at(xy) * pt.intensity;
       }
     }
+	SHOW_IMAGE(color,"converted 3");
     return CC;
   }
 

@@ -21,13 +21,13 @@ using namespace cv;
 using namespace pcl;
 using namespace ros;
 
-namespace but_calibration_camera_velodyne
+namespace But::calibration_camera_velodyne
 {
 
 Velodyne::Velodyne::Velodyne(PointCloud<Point> _point_cloud) :
     point_cloud(_point_cloud)
 {
-  getRings(); // range computation
+  //getRings();
 }
 
 Velodyne::Velodyne Velodyne::Velodyne::transform(float x, float y, float z, float rot_x, float rot_y, float rot_z)
@@ -124,53 +124,83 @@ Velodyne::Velodyne Velodyne::Velodyne::transform(vector<float> DoF)
 		intensityByDiff(Processing::INTENSITY_EDGES);
 	}
 
-	void Velodyne::Velodyne::intensityByDiff(Processing processing)
-	{
-		vector<vector<Point *> > rings = this->getRings();
+void Velodyne::Velodyne::intensityByDiff(Processing processing) {
+  auto rings = this->getRings();
+  vector<int> convolutionKernel = {-1, -1, 0, 1, 1};
+	assert(convolutionKernel.size()%2 == 1);
 
-		for (vector<vector<Point *> >::iterator ring = rings.begin();
-			 ring < rings.end(); ring++)
-		{
-			Point *prev, *succ;
-			if (ring->empty())
-			{
-				continue;
-			}
-			float last_intensity = (*ring->begin())->intensity;
-			float new_intensity;
-			(*ring->begin())->intensity     = 0;
-			(*(ring->end() - 1))->intensity = 0;
-			for (vector<Point *>::iterator pt = ring->begin() + 1;
-				 pt < ring->end() - 1; pt++)
-			{
-				prev = *(pt - 1);
-				succ = *(pt + 1);
+  for (auto ring : rings) {
+	Point *prev, *succ;
+	vector<pair<Point *,float>> newIntensitys;
 
-				switch (processing)
-				{
-					case Processing::DISTORTIONS:
-						(*pt)->intensity = MAX(MAX(prev->range - (*pt)->range,
-												   succ->range - (*pt)->range),
-											   0) * 10;
-						break;
-					case Processing::INTENSITY_EDGES:
-						new_intensity  = MAX(MAX(last_intensity -
-												 (*pt)->intensity,
-												 succ->intensity -
-												 (*pt)->intensity),
-											 0) * 10;
-						last_intensity = (*pt)->intensity;
-						(*pt)->intensity = new_intensity;
-						break;
-					case Processing::NONE:break;
-					default:
-						throw NotImplementedException(
-								"Velodyne processing unknown.");
-				}
-			}
-		}
-		normalizeIntensity(0.0, 1.0);
+	if (ring.empty()) {
+	  continue;
 	}
+
+	float last_intensity = (*ring.begin())->intensity;
+	float new_intensity;
+
+	for (auto pointPtPt = ring.begin() + 2; pointPtPt < ring.end() - 2; pointPtPt++) {
+
+	  prev = *(pointPtPt - 1);
+	  succ = *(pointPtPt + 1);
+
+	  switch (processing) {
+		case Processing::Z_DISTORTIONS:
+		  new_intensity = 0;
+		  for(int i = 0; i < convolutionKernel.size(); i++)
+		  {
+		    int shift = i - (convolutionKernel.size() / 2);
+		    auto shiftPointPt = *(pointPtPt - shift);
+			new_intensity += shiftPointPt->range * convolutionKernel[i];
+		  }
+		  new_intensity = abs(new_intensity);
+		  newIntensitys.emplace_back(pair<Point *,float>(*pointPtPt,new_intensity));
+		  break;
+		case Processing::DISTORTIONS:
+		  (*pointPtPt)->intensity =
+			  MAX(
+				  MAX(
+				  	prev->range - (*pointPtPt)->range,
+					succ->range - (*pointPtPt)->range
+				  ),
+				  0
+			  ) * 10;
+
+		  break;
+		case Processing::INTENSITY_EDGES:
+		  new_intensity =
+			  MAX(
+			  	MAX(
+			  		last_intensity - (*pointPtPt)->intensity,
+					succ->intensity - (*pointPtPt)->intensity
+				),
+				0
+			  ) * 10;
+
+		  last_intensity = (*pointPtPt)->intensity;
+		  (*pointPtPt)->intensity = new_intensity;
+		  break;
+		case Processing::NONE:break;
+		default:
+		  throw NotImplementedException(
+			  "Velodyne processing unknown.");
+	  }
+	}
+
+
+	if(processing == Processing::Z_DISTORTIONS) {
+	  for (auto x:newIntensitys) {
+		x.first->intensity = x.second;
+	  }
+	}
+	(*ring.begin())->intensity = (*(ring.begin()+3))->intensity;
+	(*(ring.end() - 1))->intensity = (*(ring.end() - 3))->intensity;
+	(*(ring.begin() +1))->intensity = (*(ring.begin()+3))->intensity;
+	(*(ring.end() - 2))->intensity = (*(ring.end() - 3))->intensity;
+  }
+  normalizeIntensity(0.0, 1.0);
+}
 
 	PointCloud<PointXYZ> *Velodyne::Velodyne::toPointsXYZ()
 	{
@@ -182,6 +212,39 @@ Velodyne::Velodyne Velodyne::Velodyne::transform(vector<float> DoF)
 		}
 		return new_cloud;
 	}
+
+PointCloud<PointXYZRGB> * Velodyne::Velodyne::toPointsXYZRGB() {
+
+  auto new_cloud = new PointCloud<PointXYZRGB>();
+
+  this->normalizeIntensity(0,1);
+
+
+  float min_found = INFINITY;
+  float max_found = -INFINITY;
+
+  for (PointCloud<Point>::iterator pt = point_cloud.points.begin();
+	   pt < point_cloud.points.end(); pt++)
+  {
+	max_found = MAX(max_found, pt->range);
+	min_found = MIN(min_found, pt->range);
+  }
+
+
+
+  for (auto point : point_cloud.points) {
+    assert(point.intensity <= 1);
+    uchar intensity = (point.intensity > 0.01) ? 255 : 0;
+    auto range = (point.range - min_found) / (max_found - min_found) * 10;
+    auto xyziPoint = PointXYZRGB(intensity,255 - intensity,0);
+    xyziPoint.x = point.x;
+    xyziPoint.y = point.y;
+    xyziPoint.z = point.z;
+	new_cloud->push_back(xyziPoint);
+  }
+
+  return new_cloud;
+}
 
 // all intensities to range min-max
 	void Velodyne::Velodyne::normalizeIntensity(float min, float max)
@@ -208,15 +271,20 @@ Velodyne::Velodyne Velodyne::Velodyne::transform(vector<float> DoF)
 //	cerr << endl;
 	}
 
+	/**
+	 * @brief Vyfiltruje body jejichž intenzita je je nižší rovna hranici
+	 * @param thresh hranice
+	 * @return
+	 */
 	Velodyne::Velodyne Velodyne::Velodyne::threshold(float thresh)
 	{
-		PointCloud<Point>                new_cloud;
-		for (PointCloud<Point>::iterator pt = point_cloud.points.begin();
-			 pt < point_cloud.points.end(); pt++)
+		PointCloud<Point> new_cloud;
+
+		for (auto point : point_cloud.points)
 		{
-			if (pt->intensity > thresh)
+			if (point.intensity > thresh)
 			{
-				new_cloud.push_back(*pt);
+				new_cloud.push_back(point);
 			}
 		}
 		return Velodyne(new_cloud);
@@ -335,5 +403,115 @@ Velodyne::Velodyne Velodyne::Velodyne::transform(vector<float> DoF)
 		}
 		return color_cloud;
 	}
+
+Velodyne::Velodyne Velodyne::Velodyne::transform(cv::Mat tvec, cv::Mat rvec) {
+  assert(tvec.cols == 1);
+  assert(tvec.rows == 3);
+  assert(rvec.cols == 1);
+  assert(rvec.rows == 3);
+  return transform(
+	  tvec.at<float>(0, 0), tvec.at<float>(0, 1), tvec.at<float>(0, 2),
+	  rvec.at<float>(0, 0), rvec.at<float>(0, 1), rvec.at<float>(0, 2)
+  );
+}
+
+void Velodyne::Velodyne::view(float trashhold, const char *windowTitle) {
+  auto cloud_ptr = ::pcl::PointCloud<pcl::PointXYZRGB>::Ptr(this->toPointsXYZRGB());
+
+  boost::shared_ptr<::pcl::visualization::PCLVisualizer> viewer(
+	  new ::pcl::visualization::PCLVisualizer(windowTitle)
+  );
+
+  viewer->setBackgroundColor(0, 0, 0);
+  ::pcl::visualization::PointCloudColorHandlerRGBField<::pcl::PointXYZRGB> rgb(cloud_ptr);
+
+  viewer->addPointCloud<::pcl::PointXYZRGB>(cloud_ptr, rgb, "sample cloud");
+  viewer->setPointCloudRenderingProperties(::pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");
+  viewer->addCoordinateSystem(0.3);
+  viewer->initCameraParameters();
+  while (!viewer->wasStopped()) {
+	viewer->spinOnce(100);
+	boost::this_thread::sleep(boost::posix_time::microseconds(
+		100000));
+  }
+}
+
+void Velodyne::Velodyne::viewMarker(vector<Point3f> centers3D, vector<float> radii3D, const char *windowTitle) {
+  auto cloud_ptr = ::pcl::PointCloud<pcl::PointXYZRGB>::Ptr(this->toPointsXYZRGB());
+
+  boost::shared_ptr<::pcl::visualization::PCLVisualizer> viewer(
+	  new ::pcl::visualization::PCLVisualizer(windowTitle)
+  );
+
+
+
+  viewer->setBackgroundColor(0, 0, 0);
+  ::pcl::visualization::PointCloudColorHandlerRGBField<::pcl::PointXYZRGB> rgb(cloud_ptr);
+
+  viewer->addPointCloud<::pcl::PointXYZRGB>(cloud_ptr, rgb, "sample cloud");
+  viewer->setPointCloudRenderingProperties(::pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");
+  viewer->addCoordinateSystem(0.3);
+
+
+  ModelCoefficients circle_1;
+  circle_1.values.resize (7);    // We need 7 values
+  circle_1.values[0] = centers3D[0].x;
+  circle_1.values[1] = centers3D[0].y;
+  circle_1.values[2] = centers3D[0].z;
+  circle_1.values[3] = 0;
+  circle_1.values[4] = 0;
+  circle_1.values[5] = 0.001;
+  circle_1.values[6] = radii3D[0];
+
+  ModelCoefficients circle_2;
+  circle_2.values.resize (7);    // We need 7 values
+  circle_2.values[0] = centers3D[1].x;
+  circle_2.values[1] = centers3D[1].y;
+  circle_2.values[2] = centers3D[1].z;
+  circle_2.values[3] = 0;
+  circle_2.values[4] = 0;
+  circle_2.values[5] = 0.001;
+  circle_2.values[6] = radii3D[1];
+
+  ModelCoefficients circle_3;
+  circle_3.values.resize (7);    // We need 7 values
+  circle_3.values[0] = centers3D[2].x;
+  circle_3.values[1] = centers3D[2].y;
+  circle_3.values[2] = centers3D[2].z;
+  circle_3.values[3] = 0;
+  circle_3.values[4] = 0;
+  circle_3.values[5] = 0.001;
+  circle_3.values[6] = radii3D[2];
+
+  ModelCoefficients circle_4;
+  circle_4.values.resize (7);    // We need 7 values
+  circle_4.values[0] = centers3D[3].x;
+  circle_4.values[1] = centers3D[3].y;
+  circle_4.values[2] = centers3D[3].z;
+  circle_4.values[3] = 0;
+  circle_4.values[4] = 0;
+  circle_4.values[5] = 0.001;
+  circle_4.values[6] = radii3D[3];
+
+  viewer->addCylinder(circle_4,"c4");
+  viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1, 0, 0, "c4");
+  viewer->addCylinder(circle_3,"c3");
+  viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "c3");
+  viewer->addCylinder(circle_2,"c2");
+  viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0, 0, 1, "c2");
+  viewer->addCylinder(circle_1,"c1");
+  viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.5, 0.5, 0, "c1");
+
+  viewer->initCameraParameters();
+  while (!viewer->wasStopped()) {
+	viewer->spinOnce(100);
+	boost::this_thread::sleep(boost::posix_time::microseconds(
+		100000));
+  }
+}
+
+Velodyne::Velodyne::Velodyne(const Velodyne &orig) {
+   point_cloud = VPointCloud(orig.point_cloud);
+}
 
 }

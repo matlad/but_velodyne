@@ -8,7 +8,6 @@
 
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
-#include <but_calibration_camera_velodyne/my_pinhole_camera_model.h>
 //#include <node.h>
 #include <sys/socket.h>
 #include <pcl/point_cloud.h>
@@ -25,7 +24,7 @@
 using pcl::PointCloud;
 using pcl::fromROSMsg;
 using cv::RotateFlags::ROTATE_90_COUNTERCLOCKWISE;
-using namespace but_calibration_camera_velodyne;
+using namespace But::calibration_camera_velodyne;
 using namespace But::calibration_camera_velodyne;
 using ros::shutdown;
 

@@ -15,7 +15,7 @@
 using namespace std;
 using namespace cv;
 
-namespace but_calibration_camera_velodyne
+namespace But::calibration_camera_velodyne
 {
 
 namespace Image
@@ -231,6 +231,9 @@ Mat Image::segmentation(int segment_count)
   Mat segmentation;
   adaptiveThreshold(img, segmentation, 1, CV_ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY, 401, 2);
   return segmentation;
+}
+Mat & Image::getImg() {
+  return img;
 }
 
 }/* NAMESPACE Image */
