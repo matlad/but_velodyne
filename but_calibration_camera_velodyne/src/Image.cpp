@@ -157,9 +157,11 @@ bool Image::detect4Circles(double canny_thresh, double center_thresh, vector<Poi
   Mat src_gray;
   this->img.copyTo(src_gray);
 
-  namedWindow("ROI");
-  Rect2f r = selectROI("ROI",src_gray);
-  destroyWindow("ROI");
+  Rect2f r = Rect2f(383,261,485-383,361-261);
+
+//  namedWindow("ROI");
+//  Rect2f r = selectROI("ROI",src_gray);
+//  destroyWindow("ROI");
 
   // Crop image
   Mat imCorp = src_gray(r);

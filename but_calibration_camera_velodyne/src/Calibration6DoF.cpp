@@ -34,8 +34,8 @@ double Calibration6DoF::rZ() {
 }
 
 void Calibration6DoF::set(cv::Mat tvec, cv::Mat rvec, double val) {
-  assert(tvec.cols == 1); assert(tvec.rows == 3); assert(tvec.type() == CV_64FC1);
-  assert(rvec.cols == 1); assert(rvec.rows == 3); assert(rvec.type() == CV_64FC1);
+  ASSERT_IS_VEC_3D(tvec);
+  ASSERT_IS_VEC_3D(rvec);
 
   set(
 	  tvec.at<double>(X), tvec.at<double>(Y), tvec.at<double>(Z),

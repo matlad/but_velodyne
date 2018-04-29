@@ -27,6 +27,7 @@ using but::calibration_camera_velodyne::Calibrator;
 using but::calibration_camera_velodyne::Velodyne::VPointCloud;
 using but::calibration_camera_velodyne::FishEyeCamera;
 using but::calibration_camera_velodyne::Calibration6DoF;
+using std::clog;
 using std::cerr;
 using std::endl;
 
@@ -66,6 +67,8 @@ int main(int argc, char *argv[]) {
   camera.tvec = VEC_3D;
   camera.rvec = VEC_3D;
 
+  clog << camera << endl;
+
   VPointCloud pointCloud;
   pcl::io::loadPCDFile(argv[ARG_POINT_CLOUD], pointCloud);
   if (pointCloud.empty()) {
@@ -80,7 +83,7 @@ int main(int argc, char *argv[]) {
   calibrator.setImage(image);
   calibrator.setPointCloud(pointCloud);
 
-  Calibration6DoF calibration6DoF = calibrator.calibration(true);
+  Calibration6DoF calibration6DoF = calibrator.calibration(false);
   calibration6DoF.print();
 
   return EXIT_SUCCESS;

@@ -22,35 +22,39 @@ include_directories( ${OpenCV_INCLUDE_DIRS})
 
 find_package(PCL 1.7 REQUIRED) 
 include_directories(${PCL_INCLUDE_DIRS})
-add_definitions(${PCL_DEFINITIONS}) 
+add_definitions(${PCL_DEFINITIONS})
+
+find_package(Eigen3 REQUIRED)
+include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
+message("Found Eigen3 in: ${EIGEN3_INCLUDE_DIR}")
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
 add_executable(calibrationNonRos
-        src/Image.cpp
-        include/but_calibration_camera_velodyne/Image.h
-        src/Velodyne.cpp
-        include/but_calibration_camera_velodyne/Velodyne.h
-        src/Similarity.cpp
-        include/but_calibration_camera_velodyne/Similarity.h
-        src/Calibration3DMarker.cpp
-        include/but_calibration_camera_velodyne/Calibration3DMarker.h
-        src/Calibrator.cpp
-        include/but_calibration_camera_velodyne/Calibrator.h
-        src/RosCalibratorWrapper.cpp
-        include/but_calibration_camera_velodyne/RosCalibratorWrapper.h
-        src/Camera.cpp
-        include/but_calibration_camera_velodyne/Camera.h
-        src/Calibration6DoF.cpp
-        include/but_calibration_camera_velodyne/Calibration6DoF.h
-        include/but_calibration_camera_velodyne/macros.h
-        src/calibration.cpp
-        src/FishEyeCamera.cpp
-        include/but_calibration_camera_velodyne/FishEyeCamera.h
+               src/Image.cpp
+               include/but_calibration_camera_velodyne/Image.h
+               src/Velodyne.cpp
+               include/but_calibration_camera_velodyne/Velodyne.h
+               src/Similarity.cpp
+               include/but_calibration_camera_velodyne/Similarity.h
+               src/Calibration3DMarker.cpp
+               include/but_calibration_camera_velodyne/Calibration3DMarker.h
+               src/Calibrator.cpp
+               include/but_calibration_camera_velodyne/Calibrator.h
+               src/RosCalibratorWrapper.cpp
+               include/but_calibration_camera_velodyne/RosCalibratorWrapper.h
+               src/Camera.cpp
+               include/but_calibration_camera_velodyne/Camera.h
+               src/Calibration6DoF.cpp
+               include/but_calibration_camera_velodyne/Calibration6DoF.h
+               include/but_calibration_camera_velodyne/macros.h
+               src/calibration.cpp
+               src/FishEyeCamera.cpp
+               include/but_calibration_camera_velodyne/FishEyeCamera.h
 
-        src/Colorizer.cpp #todo
-        include/but_calibration_camera_velodyne/Colorizer.h #todo
-        )
+               src/Colorizer.cpp #todo
+               include/but_calibration_camera_velodyne/Colorizer.h #todo
+               src/types.cpp)
 target_link_libraries(calibrationNonRos ${PCL_LIBRARIES})
 target_link_libraries(calibrationNonRos ${catkin_LIBRARIES})
 

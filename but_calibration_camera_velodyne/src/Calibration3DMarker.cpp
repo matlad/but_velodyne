@@ -22,6 +22,7 @@ Calibration3DMarker::Calibration3DMarker(cv::Mat _frame_gray, cv::Mat _P, ::Poin
 {
 
   Velodyne::Velodyne scan(pc);
+
   // Identifikace vertikálních hran ve scanu
   scan.intensityByRangeDiff();
   PointCloud<Velodyne::Point> visible_cloud;
@@ -29,9 +30,13 @@ Calibration3DMarker::Calibration3DMarker(cv::Mat _frame_gray, cv::Mat _P, ::Poin
   scan.project(P, Rect(0, 0, 640, 480), &visible_cloud);
   Velodyne::Velodyne visible_scan(visible_cloud);
   visible_scan.normalizeIntensity();
+  //visible_scan.view();
+
   // Odfiltrování bodů které nejsou hranou
   Velodyne::Velodyne thresholded_scan = visible_scan.threshold(0.1);
   PointCloud<PointXYZ>::Ptr xyz_cloud_ptr(thresholded_scan.toPointsXYZ());
+
+  //thresholded_scan.view();
 
   SampleConsensusModelPlane<PointXYZ>::Ptr model_p(
       new ::SampleConsensusModelPlane<PointXYZ>(xyz_cloud_ptr));
@@ -162,7 +167,7 @@ vector<PointXYZ> Calibration3DMarker::detect4spheres(PointCloud<PointXYZ>::Ptr p
     remove_inliers<PointXYZ>(*plane, inliers_indicies, *outliers);
     copyPointCloud<PointXYZ>(*plane, inliers_indicies, *inliers);
     plane = outliers;
-    //view(plane);
+    //Velodyne::Velodyne::view(plane);
 
     *four_spheres += *inliers;
     PointXYZ middle(coeficients(0), coeficients(1), coeficients(2));

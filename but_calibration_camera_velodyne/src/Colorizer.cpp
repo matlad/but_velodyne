@@ -28,6 +28,8 @@
 #include <but_calibration_camera_velodyne/Velodyne.h>
 #include <but_calibration_camera_velodyne/macros.h>
 #include <but_calibration_camera_velodyne/Calibrator.h>
+#include <but_calibration_camera_velodyne/types.h>
+#include <but_calibration_camera_velodyne/Constants.h>
 
 using namespace std;
 using namespace cv;
@@ -37,16 +39,15 @@ using namespace but::calibration_camera_velodyne::Velodyne;
 
 void Colorizer::setImage(Mat& image) {
   this->image = image;
-
-  SHOW_IMAGE(image,"title");
 }
 
 void Colorizer::setCamera(Camera *camera) {
   this->camera = camera;
 }
 
-void Colorizer::setPointCloud(Velodyne::Velodyne pointCloud) {
+void Colorizer::setPointCloud(Velodyne::Velodyne pointCloud) { ;
   this->pointCloud = pointCloud.ros2ButCoordinateSystem();
+  //this->pointCloud.view();
 }
 
 PointCloud<PointXYZRGB> Colorizer::colorize() {
@@ -87,10 +88,12 @@ PointCloud<PointXYZRGB> Colorizer::colorize() {
 }
 
 PointCloud<PointXYZRGB> Colorizer::colourByFishEye() {
+
+  clog << *camera << endl;
+
   PointCloud<PointXYZRGB> colorPointCloud;
 
   auto pointCloudTransform = pointCloud.transform(camera->tvec, camera->rvec);
-  SHOW_IMAGE(this->image,"disort");
 
   Mat color;
   Mat image;
@@ -100,19 +103,25 @@ PointCloud<PointXYZRGB> Colorizer::colourByFishEye() {
   //SHOW_IMAGE(color,"undisort");
 
 
-  cv::Rect frame(cv::Point(0, 0), image.size());
+  cv::Rect frame(cv::Point(0, 0), color.size());
   pointCloudTransform.normalizeIntensity(0,1);
+  pointCloudTransform.view(0, "pointCloudTransform");
   for (auto pt : pointCloudTransform) {
 
-	cv::Point xy = Velodyne::Velodyne::project(pt, camera->P);
+    cv::Point xy = Velodyne::Velodyne::project(pt, camera->P);
+    //cv::Point xy = camera->project(Point3f(pt.x, pt.y, pt.z));
 
-	if (pt.z > 0 && xy.inside(frame)) {
+    if (pt.z > 0 && xy.inside(frame)) {
 
-	  assert(pt.intensity <= 1);
-	  color.at<cv::Vec3b>(xy)[1] = pt.intensity < POINTCLOUD_EDGE_TRASH_HOLD ? 255 : 0;
-	  color.at<cv::Vec3b>(xy)[2] = pt.intensity < POINTCLOUD_EDGE_TRASH_HOLD ? 0 : 255;
-	  color.at<cv::Vec3b>(xy)[0] = pt.intensity * 255;
-	}
+      assert(pt.intensity <= 1);
+
+      // Překreslení bodů z kamery projekcí bodu z lidaru
+      color.at<cv::Vec3b>(xy)[RED] = static_cast<u_char>(pt.intensity * 255);
+      color.at<cv::Vec3b>(xy)[GREEN] =
+          pt.intensity < POINTCLOUD_EDGE_TRASH_HOLD ? 255_rgb_c : 0_rgb_c;
+      color.at<cv::Vec3b>(xy)[BLUE] =
+          pt.intensity < POINTCLOUD_EDGE_TRASH_HOLD ? 0_rgb_c : 255_rgb_c;
+    }
   }
   SHOW_IMAGE(color,"simlrarity");
 
@@ -133,7 +142,6 @@ PointCloud<PointXYZRGB> Colorizer::colourByFishEye() {
   camera->rvec.convertTo(rvec,CV_64FC1);
 
   Mat projectedPoints;
-  SHOW_IMAGE(image,"img");
 
   fisheye::projectPoints(
 	  cvPointCloud,

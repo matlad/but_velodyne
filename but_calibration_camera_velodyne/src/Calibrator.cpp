@@ -32,6 +32,7 @@ using ::but::calibration_camera_velodyne::Image::Image;
 using Velodyne::Processing;
 using cv::Point2f;
 using cv::Point3f;
+using cv::Point3d;
 
 /**
  * @brief Nastaví obraz kamery pro kalibraci
@@ -146,7 +147,7 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
   Calibration6DoF calib;
   solvePnP(centers3D, centers2D, camera->K, Mat(), frvec, ftvec);
 
-  calib.set(ftvec, frvec, getSimilarity2(ftvec, frvec, "solvePnP"));
+  calib.set(ftvec, frvec, getSimilarity(ftvec, frvec, "solvePnP"));
   cout << "solvePnP" << endl;
   calib.print();
 
@@ -161,7 +162,7 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
       cv::SOLVEPNP_P3P
   );
 
-  calib.set(ftvec, frvec, getSimilarity2(ftvec, frvec, "solvePnP - P3P"));
+  calib.set(ftvec, frvec, getSimilarity(ftvec, frvec, "solvePnP - P3P"));
   cout << "solvePnP - P3P" << endl;
   calib.print();
   camera->rvec = frvec;
@@ -178,7 +179,7 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
            false,
            cv::SOLVEPNP_AP3P);
 
-  calib.set(ftvec, frvec, getSimilarity2(ftvec, frvec, "solvePnP - AP3P"));
+  calib.set(ftvec, frvec, getSimilarity(ftvec, frvec, "solvePnP - AP3P"));
   cout << "solvePnP - AP3P" << endl;
   calib.print();
   camera->rvec = frvec;
@@ -222,7 +223,7 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
                  100,
                  8.0);
 
-  calib.set(ftvec, frvec, getSimilarity2(ftvec, frvec, "solvePnPRansac"));
+  calib.set(ftvec, frvec, getSimilarity(ftvec, frvec, "solvePnPRansac"));
   cout << "solvePnPRansac" << endl;
   calib.print();
 
@@ -241,7 +242,7 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
 
   calib.set(tvec,
             rvec,
-            getSimilarity2(tvec, rvec, "solvePnPRansac + findTranslation"));
+            getSimilarity(tvec, rvec, "solvePnPRansac + findTranslation"));
   cout << "solvePnPRansac + findTranslation" << endl;
   calib.print();
   camera->rvec = frvec;
@@ -263,7 +264,7 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
                cv::SOLVEPNP_P3P);
 
   for (unsigned int i = 0; i < rvecs.size(); ++i) {
-    calib.set(tvecs[i], rvecs[i], getSimilarity2(ftvec, frvec, "solveP3P"));
+    calib.set(tvecs[i], rvecs[i], getSimilarity(ftvec, frvec, "solveP3P"));
     cout << "solveP3P " << i << endl;
     calib.print();
   }
@@ -277,7 +278,7 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
                cv::SOLVEPNP_AP3P);
 
   for (unsigned int i = 0; i < rvecs.size(); ++i) {
-    calib.set(tvecs[i], rvecs[i], getSimilarity2(ftvec, frvec, "solveAP3P"));
+    calib.set(tvecs[i], rvecs[i], getSimilarity(ftvec, frvec, "solveAP3P"));
     cout << "solveAP3P " << i << endl;
     calib.print();
   }
@@ -312,22 +313,10 @@ double Calibrator::getSimilarity(cv::Mat &tvec,
                                  cv::Mat &rvec,
                                  const char *title) {
 
-  assert(tvec.cols == 1);
-  assert(tvec.rows == 3);
-  assert(rvec.cols == 1);
-  assert(rvec.rows == 3);
+  ASSERT_IS_VEC_3D(tvec);
+  ASSERT_IS_VEC_3D(rvec);
 
-//  if(tvec.type() != CV_32FC1)
-//  {
-//	tvec.convertTo(tvec,CV_32FC1);
-//  }
-//
-//  if(rvec.type() != CV_32FC1)
-//  {
-//	rvec.convertTo(rvec,CV_32FC1);
-//  }
-
-  cv::Mat color;
+  Mat color;
   auto img = edgeImage->getImg();
   cv::cvtColor(img, color, cv::COLOR_GRAY2BGR);
 
@@ -335,34 +324,31 @@ double Calibrator::getSimilarity(cv::Mat &tvec,
   double CC = 0;
   auto transform = edgePointCloud;
 
-  tvec.setTo(cv::Scalar(0));
-  rvec.setTo(cv::Scalar(0));
-
-  cout << "tvec" << tvec << "rvec" << rvec << endl;
+  Mat NoD = Mat(1, 5, CV_64FC1, cv::Scalar(0));
 
   for (auto pt : transform) {
 
     Mat imagePoints;
-    Point3f p3f;
-    p3f.x = pt.x;
-    p3f.y = pt.y;
-    p3f.z = pt.z;
+    Point3d p3d;
+    p3d.x = (double)pt.x;
+    p3d.y = (double)pt.y;
+    p3d.z = (double)pt.z;
 
-    vector<Point3f> objectPoints;
-    objectPoints.push_back(p3f);
-    cv::projectPoints(objectPoints, rvec, tvec, camera->K, Mat(), imagePoints);
-    cv::Point xy = imagePoints.at<cv::Point2i>(1);
+    vector<Point3d> objectPoints;
+    objectPoints.push_back(p3d);
+    cv::projectPoints(objectPoints, rvec, tvec, camera->K, NoD, imagePoints);
+    cv::Point2d xy = imagePoints.at<cv::Point2d>(0);
 
     if (pt.z > 0 && xy.inside(frame)) {
 
       assert(pt.intensity <= 1);
-      CC += img.at<cv::Vec3b>(xy)[0]
+      CC += img.at<cv::Vec3b>(xy)[RED]
           * pt.intensity; // šedý obrázek rgb sou si rovny vezmem jeden kanál
-      color.at<cv::Vec3b>(xy)[1] =
+      color.at<cv::Vec3b>(xy)[BLUE] =
           pt.intensity < POINTCLOUD_EDGE_TRASH_HOLD ? 255_rgb_c : 0_rgb_c;
-      color.at<cv::Vec3b>(xy)[2] =
+      color.at<cv::Vec3b>(xy)[GREEN] =
           pt.intensity < POINTCLOUD_EDGE_TRASH_HOLD ? 0_rgb_c : 255_rgb_c;
-      color.at<cv::Vec3b>(xy)[0] = static_cast<u_char>(pt.intensity * 255);
+      color.at<cv::Vec3b>(xy)[RED] = static_cast<u_char>(pt.intensity * 255);
     }
   }
   SHOW_IMAGE(color, title);
@@ -373,18 +359,9 @@ double Calibrator::getSimilarity2(cv::Mat &tvec,
                                   cv::Mat &rvec,
                                   const char *title) {
 
-  assert(tvec.cols == 1);
-  assert(tvec.rows == 3);
-  assert(rvec.cols == 1);
-  assert(rvec.rows == 3);
+  ASSERT_IS_VEC_3D(tvec);
+  ASSERT_IS_VEC_3D(rvec);
 
-  if (tvec.type() != CV_64FC1) {
-    tvec.convertTo(tvec, CV_64FC1);
-  }
-
-  if (rvec.type() != CV_64FC1) {
-    rvec.convertTo(rvec, CV_64FC1);
-  }
 
   cv::Mat color;
   auto img = edgeImage->getImg();
@@ -403,13 +380,15 @@ double Calibrator::getSimilarity2(cv::Mat &tvec,
     if (pt.z > 0 && xy.inside(frame)) {
 
       assert(pt.intensity <= 1);
-      CC += img.at<cv::Vec3b>(xy)[0]
-          * pt.intensity; // šedý obrázek rgb sou si rovny vezmem jeden kanál
-      color.at<cv::Vec3b>(xy)[1] =
+      // mám šedý obrázek převedeny do egb, všechny kanály jsou si rovny vezmem jeden kanál a vynásobíme intenzitou
+      CC += img.at<cv::Vec3b>(xy)[RED] * pt.intensity;
+
+      // Překreslení bodů z kamery projekcí bodu z lidaru
+      color.at<cv::Vec3b>(xy)[RED] = static_cast<u_char>(pt.intensity * 255);
+      color.at<cv::Vec3b>(xy)[GREEN] =
           pt.intensity < POINTCLOUD_EDGE_TRASH_HOLD ? 255_rgb_c : 0_rgb_c;
-      color.at<cv::Vec3b>(xy)[2] =
+      color.at<cv::Vec3b>(xy)[BLUE] =
           pt.intensity < POINTCLOUD_EDGE_TRASH_HOLD ? 0_rgb_c : 255_rgb_c;
-      color.at<cv::Vec3b>(xy)[0] = static_cast<u_char>(pt.intensity * 255);
     }
   }
   SHOW_IMAGE(color, title);
@@ -426,20 +405,16 @@ Calibration6DoF Calibrator::findTranslation(std::vector<cv::Point2f> image,
                                             double radius3D) {
   auto projection = camera->P;
 
-  Mat rvec(3, 1, CV_32FC1);
-  rvec.at<double>(0, 0) = 0;
-  rvec.at<double>(1, 0) = 0;
-  rvec.at<double>(2, 0) = 0;
+  Mat rvec = VEC_3D;
+  Mat tvec = VEC_3D;
 
-  Mat tvec(3, 1, CV_32FC1);
-
-  double focal_len = projection.at<double>(0, 0);
+  double focal_len = camera->K_fx();
 
   // t_z:
   tvec.at<double>(Z) = radius3D * focal_len / radius2D - velodyne.front().z;
 
-  double principal_x = projection.at<double>(0, 2);
-  double principal_y = projection.at<double>(1, 2);
+  double principal_x = camera->K_cx();
+  double principal_y = camera->K_cy();
 
   for (size_t i = 0; i < image.size(); i++) {
     // t_x:
@@ -461,7 +436,7 @@ Calibration6DoF Calibrator::findTranslation(std::vector<cv::Point2f> image,
   // no rotation and value of calibration
   return Calibration6DoF(tvec,
                          rvec,
-                         getSimilarity2(tvec, rvec, "findTranslation"));
+                         getSimilarity(tvec, rvec, "findTranslation"));
 }
 
 void Calibrator::calibrationRefinement(

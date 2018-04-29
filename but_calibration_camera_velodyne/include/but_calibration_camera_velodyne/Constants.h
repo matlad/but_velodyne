@@ -14,6 +14,10 @@ const cv::Point X = {0, 0};
 const cv::Point Y = {1, 0};
 const cv::Point Z = {2, 0};
 
+#define RED 2
+#define GREEN 1
+#define BLUE 0
+
 typedef cv::Mat RVec;
 typedef cv::Mat TVec;
 

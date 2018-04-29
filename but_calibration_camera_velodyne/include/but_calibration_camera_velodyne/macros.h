@@ -28,9 +28,48 @@
   cv::namedWindow((title), CV_WINDOW_AUTOSIZE);\
   cv::imshow((title), image);\
   cv::waitKey(0);\
-  cv::destroyWindow((title));\
+  cv::destroyWindow((title));
 
 #define VEC_3D cv::Mat(3,1,CV_64FC1,cv::Scalar(0))
+
+#define ASSERT_IS_VEC_3D(vec)\
+assert((vec).cols == 1);\
+assert((vec).rows == 3);\
+assert((vec).type() == CV_64FC1);
+
+
+
+#define GENERATE_3D_POINTS()\
+std::vector<cv::Point3d> points;                                               \
+                                                                               \
+double x, y, z;                                                                \
+                                                                               \
+x = 0; y = 0; z = +.5;                                                         \
+points.push_back(cv::Point3d(x, y, z));                                        \
+                                                                               \
+x = .5; y = .5; z = -.5;                                                       \
+points.push_back(cv::Point3d(x, y, z));                                        \
+                                                                               \
+x = .5; y = .5; z = .5;                                                        \
+points.push_back(cv::Point3d(x, y, z));                                        \
+                                                                               \
+x = -.5; y = .5; z = .5;                                                       \
+points.push_back(cv::Point3d(x, y, z));                                        \
+                                                                               \
+x = -.5; y = .5; z = -.5;                                                      \
+points.push_back(cv::Point3d(x, y, z));                                        \
+                                                                               \
+x = .5; y = -.5; z = -.5;                                                      \
+points.push_back(cv::Point3d(x, y, z));                                        \
+                                                                               \
+x = -.5; y = -.5; z = -.5;                                                     \
+points.push_back(cv::Point3d(x, y, z));                                        \
+                                                                               \
+x = -.5; y = -.5; z = .5;                                                      \
+points.push_back(cv::Point3d(x, y, z));                                        \
+                                                                               \
+x = -0.336698; y = -0.0989147; z = 1.37389;                                                      \
+points.push_back(cv::Point3d(x, y, z));
 
 
 
