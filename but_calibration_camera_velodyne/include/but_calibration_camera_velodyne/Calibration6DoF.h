@@ -11,7 +11,7 @@
 #include <cstdio>
 #include <but_calibration_camera_velodyne/Similarity.h>
 
-namespace But::calibration_camera_velodyne {
+namespace but::calibration_camera_velodyne {
 class Calibration6DoF {
  public:
   /**
@@ -20,17 +20,17 @@ class Calibration6DoF {
    * a rotation x y z v
    * tomto pořadí
    */
-  std::vector<float> DoF;
+  std::vector<double> DoF;
 
   /**
    * @brief Skoré jak moc je tato kalibrace přesná
    */
-  float value; // NaN = wrong calibration
+  double value; // NaN = wrong calibration
 
  public:
-  Calibration6DoF(float x, float y, float z,
-                  float x_r, float y_r, float z_r,
-                  float val
+  Calibration6DoF(double x, double y, double z,
+                  double x_r, double y_r, double z_r,
+                  double val
   ) {
     set(x, y, z, x_r, y_r, z_r, val);
   }
@@ -39,9 +39,9 @@ class Calibration6DoF {
    * @param tvec
    * @param rvec
    * @param val
-   * @see ::set(cv::Mat tvec, cv::Mat rvec, float val)
+   * @see ::set(cv::Mat tvec, cv::Mat rvec, double val)
    */
-  Calibration6DoF(cv::Mat tvec, cv::Mat rvec, float val)
+  Calibration6DoF(cv::Mat tvec, cv::Mat rvec, double val)
   {
     set(tvec,rvec,val);
   };
@@ -59,7 +59,7 @@ class Calibration6DoF {
     return !std::isnan(value);
   }
 
-  void set(float x, float y, float z, float x_r, float y_r, float z_r, float val)
+  void set(double x, double y, double z, double x_r, double y_r, double z_r, double val)
   {
     value = val;
 
@@ -78,14 +78,14 @@ class Calibration6DoF {
    * @param rvec matice 1x3 pro rotaci x,y,z
    * @param val score
    */
-  void set(cv::Mat tvec, cv::Mat rvec, float val);
+  void set(cv::Mat tvec, cv::Mat rvec, double val);
 
-  float tX();
-  float tY();
-  float tZ();
-  float rX();
-  float rY();
-  float rZ();
+  double tX();
+  double tY();
+  double tZ();
+  double rX();
+  double rY();
+  double rZ();
 
   bool operator<=(Calibration6DoF &other) {
     return this->value <= other.value;
@@ -99,7 +99,7 @@ class Calibration6DoF {
     }
   }
 
-  void operator/=(float div) {
+  void operator/=(double div) {
     this->value /= div;
     for (size_t i = 0; i < DoF.size(); i++) {
       this->DoF[i] /= div;

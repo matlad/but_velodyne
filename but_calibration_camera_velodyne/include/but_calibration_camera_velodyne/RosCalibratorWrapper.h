@@ -13,7 +13,7 @@
 #include "opencv2/opencv.hpp"
 #include "but_calibration_camera_velodyne/Calibrator.h"
 class RosCalibratorWrapper {
-  But::calibration_camera_velodyne::Calibrator calibrator;
+  but::calibration_camera_velodyne::Calibrator calibrator;
 
  public:
   void callback(
@@ -25,7 +25,7 @@ class RosCalibratorWrapper {
   void processImage(const sensor_msgs::ImageConstPtr &image);
   void processPointCloud(const sensor_msgs::PointCloud2ConstPtr &pointCloud);
 
-  RosCalibratorWrapper(float distance,float radius);
+  RosCalibratorWrapper(double distance,double radius);
 };
 
 #endif //BUT_CALIBRATION_CAMERA_VELODYNE_ROSCALIBRATORWRAPPER_H

@@ -26,7 +26,7 @@ using namespace std;
 using namespace ros;
 using namespace message_filters;
 using namespace pcl;
-using namespace But::calibration_camera_velodyne;
+using namespace but::calibration_camera_velodyne;
 
 Mat projection_matrix;
 Mat frame_rgb, frame_r_rgb, undisort2, diff;
@@ -37,7 +37,7 @@ bool doRefinement = false;
 #include "but_calibration_camera_velodyne/RosCalibratorWrapper.h"
 
 static const char *const NODE_NAME = "calibration_node";
-using But::calibration_camera_velodyne::Calibrator;
+using but::calibration_camera_velodyne::Calibrator;
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, NODE_NAME);
@@ -60,8 +60,8 @@ int main(int argc, char **argv) {
   string VELODYNE_TOPIC;
 
   // marker properties:
-  float STRAIGHT_DISTANCE; // 23cm
-  float RADIUS; // 8.25cmBREAK
+  double STRAIGHT_DISTANCE; // 23cm
+  double RADIUS; // 8.25cmBREAK
 
   ros::NodeHandle n;
   n.getParam(

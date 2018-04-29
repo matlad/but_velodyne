@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace But::calibration_camera_velodyne
+namespace but::calibration_camera_velodyne
 {
 
 class NotImplementedException : public std::runtime_error

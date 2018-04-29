@@ -25,7 +25,7 @@
 #include <but_calibration_camera_velodyne/Image.h>
 #include <but_calibration_camera_velodyne/Velodyne.h>
 
-namespace But::calibration_camera_velodyne {
+namespace but::calibration_camera_velodyne {
 
 class Similarity
 {
@@ -170,7 +170,7 @@ public:
         CC += img.at(xy) * pt.intensity;
       }
     }
-	SHOW_IMAGE(color,"converted 3");
+	//SHOW_IMAGE(color,"converted 3");
     return CC;
   }
 

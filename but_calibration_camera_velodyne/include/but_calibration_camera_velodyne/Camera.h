@@ -9,9 +9,11 @@
 
 #include <opencv2/core/matx.hpp>
 #include <opencv2/core/mat.hpp>
-namespace But::calibration_camera_velodyne {
+#include "but_calibration_camera_velodyne/Image.h"
 
-class CameraParameters {
+namespace but::calibration_camera_velodyne {
+
+class Camera {
  public:
 
   /**
@@ -29,9 +31,21 @@ class CameraParameters {
    */
   cv::Mat D;
 
-  cv::Vec3f tvec;
+  cv::Mat tvec;
 
-  cv::Vec3f rvec;
+  cv::Mat rvec;
+
+  /**
+   * @brief
+   * @return
+   */
+  virtual Image::Image undisort(Image::Image) = 0;
+
+  /**
+   * @brief Promítne
+   * @return
+   */
+  virtual cv::Point2i project(cv::Point3f) = 0;
 };
 
 }

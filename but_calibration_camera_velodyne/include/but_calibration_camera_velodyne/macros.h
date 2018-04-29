@@ -30,4 +30,8 @@
   cv::waitKey(0);\
   cv::destroyWindow((title));\
 
+#define VEC_3D cv::Mat(3,1,CV_64FC1,cv::Scalar(0))
+
+
+
 #endif //BUT_CALIBRATION_CAMERA_VELODYNE_MACROS_H

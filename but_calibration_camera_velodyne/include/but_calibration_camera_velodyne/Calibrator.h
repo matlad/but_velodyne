@@ -7,15 +7,18 @@
 #ifndef BUT_CALIBRATION_CAMERA_VELODYNE_CALIBRATOR_H
 #define BUT_CALIBRATION_CAMERA_VELODYNE_CALIBRATOR_H
 
+#define POINTCLOUD_EDGE_TRASH_HOLD 0.005
+
 #include <boost/shared_ptr.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <pcl/point_cloud.h>
 #include <but_calibration_camera_velodyne/Velodyne.h>
-#include <but_calibration_camera_velodyne/CameraParameters.h>
+#include <but_calibration_camera_velodyne/Camera.h>
 #include <but_calibration_camera_velodyne/Calibration3DMarker.h>
 #include "Calibration6DoF.h"
+#include "but_calibration_camera_velodyne/Camera.h"
 
-namespace But::calibration_camera_velodyne {
+namespace but::calibration_camera_velodyne {
 
 class Calibrator {
 
@@ -43,17 +46,17 @@ class Calibrator {
   /**
    * @brief Vnitřní parametry kamery
    */
-  CameraParameters cameraParameters;
+   Camera * camera;
 
   /**
    * @brief Vzdálenost kruhů v
    */
-  float circleDistance;
+  double circleDistance;
 
   /**
    * @brief Rádius kruhů markeru
    */
-  float radius;
+  double radius;
 
  public:
 
@@ -71,14 +74,14 @@ class Calibrator {
 
   /**
    * @brief nastaví parametry kamery
-   * @param cameraParameters
+   * @param camera
    */
-  void setCameraParameters(CameraParameters &cameraParameters);
+  void setCamera(Camera *camera);
 
   /**
    * @brief opraví zkreslení zpracovávaného obrazu
    */
-  void undisortImage();
+  void undistortImage();
 
   /**
    * @brief Odhadne translaci kamery vůči lidaru
@@ -91,8 +94,8 @@ class Calibrator {
    */
   Calibration6DoF findTranslation(std::vector<cv::Point2f> image,
 								  std::vector<cv::Point3f> velodyne,
-								  float radius2D,
-								  float radius3D);
+								  double radius2D,
+								  double radius3D);
 
   /**
    * @brief Doladění externách parametrů
@@ -109,7 +112,7 @@ class Calibrator {
 
   Calibration6DoF calibration(bool doRefinement);
 
-  Calibrator(float circleDistance, float radius);
+  Calibrator(double circleDistance, double radius);
 
   /**
  * @brief provede reprojekci a spočítá podobnost
@@ -120,11 +123,15 @@ class Calibrator {
  * @param y_r
  * @param z_r
  */
-  float getSimilarity(cv::Mat &tvec, cv::Mat &rvec);
+  double getSimilarity(cv::Mat &tvec, cv::Mat &rvec, const char * title = "getSimilarity");
 
   virtual ~Calibrator();
 
+  double getSimilarity2(cv::Mat &tvec, cv::Mat &rvec, const char *title);
 
+  Velodyne::Velodyne rawPCl;
+
+  cv::Mat rawImg;
 };
 
 }

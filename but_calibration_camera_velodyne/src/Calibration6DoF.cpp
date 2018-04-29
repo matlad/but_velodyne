@@ -4,40 +4,42 @@
  * @date     1.4.18
  * @author   Adam Mátl <xmatla00@stud.fit.vutbr.cz> <matla@matla.cz>
  */
+#include <but_calibration_camera_velodyne/Constants.h>
 #include "but_calibration_camera_velodyne/Calibration6DoF.h"
 
-using namespace But::calibration_camera_velodyne;
+using namespace but::calibration_camera_velodyne;
 
-float Calibration6DoF::tX() {
+double Calibration6DoF::tX() {
   return DoF[0];
 }
 
-float Calibration6DoF::tY() {
+double Calibration6DoF::tY() {
   return DoF[1];
 }
 
-float Calibration6DoF::tZ() {
+double Calibration6DoF::tZ() {
   return DoF[2];
 }
 
-float Calibration6DoF::rX() {
+double Calibration6DoF::rX() {
   return DoF[3];
 }
 
-float Calibration6DoF::rY() {
+double Calibration6DoF::rY() {
   return DoF[4];
 }
 
-float Calibration6DoF::rZ() {
+double Calibration6DoF::rZ() {
   return DoF[5];
 }
 
-void Calibration6DoF::set(cv::Mat tvec, cv::Mat rvec, float val) {
-  assert(tvec.cols == 1); assert(tvec.rows == 3);
-  assert(rvec.cols == 1); assert(rvec.rows == 3);
+void Calibration6DoF::set(cv::Mat tvec, cv::Mat rvec, double val) {
+  assert(tvec.cols == 1); assert(tvec.rows == 3); assert(tvec.type() == CV_64FC1);
+  assert(rvec.cols == 1); assert(rvec.rows == 3); assert(rvec.type() == CV_64FC1);
+
   set(
-	  tvec.at<float>(0, 0), tvec.at<float>(0, 1), tvec.at<float>(0, 2),
-	  rvec.at<float>(0, 0), rvec.at<float>(0, 1), rvec.at<float>(0, 2),
+	  tvec.at<double>(X), tvec.at<double>(Y), tvec.at<double>(Z),
+	  rvec.at<double>(X), rvec.at<double>(Y), rvec.at<double>(Z),
 	  val
   );
 }

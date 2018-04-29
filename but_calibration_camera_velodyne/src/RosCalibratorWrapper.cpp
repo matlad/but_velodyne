@@ -15,7 +15,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <but_calibration_camera_velodyne/macros.h>
 #include "but_calibration_camera_velodyne/RosCalibratorWrapper.h"
-#include "but_calibration_camera_velodyne/CameraParameters.h"
+#include "but_calibration_camera_velodyne/FishEyeCamera.h"
 #include "but_calibration_camera_velodyne/Calibration6DoF.h"
 
 #define BREAK 0
@@ -24,8 +24,7 @@
 using pcl::PointCloud;
 using pcl::fromROSMsg;
 using cv::RotateFlags::ROTATE_90_COUNTERCLOCKWISE;
-using namespace But::calibration_camera_velodyne;
-using namespace But::calibration_camera_velodyne;
+using namespace but::calibration_camera_velodyne;
 using ros::shutdown;
 
 void RosCalibratorWrapper::callback(
@@ -55,18 +54,18 @@ void RosCalibratorWrapper::callback(
 }
 
 void RosCalibratorWrapper::processImageInfo(const sensor_msgs::CameraInfoConstPtr &imageInfo) {
-  auto cameraParams = CameraParameters();
-  cv::Mat(3, 4, CV_64FC1, (void *) &imageInfo->P).copyTo(cameraParams.P);
-  cameraParams.P.convertTo(cameraParams.P, CV_32FC1);
-  cv::Mat(imageInfo->D).copyTo(cameraParams.D);
-  rotate(cameraParams.D, cameraParams.D, ROTATE_90_COUNTERCLOCKWISE);
-  cv::Mat(3, 3, CV_64FC1, (void *) &imageInfo->K).copyTo(cameraParams.K);
+  auto camera = FishEyeCamera();
+  cv::Mat(3, 4, CV_64FC1, (void *) &imageInfo->P).copyTo(camera.P);
+  camera.P.convertTo(camera.P, CV_32FC1);
+  cv::Mat(imageInfo->D).copyTo(camera.D);
+  rotate(camera.D, camera.D, ROTATE_90_COUNTERCLOCKWISE);
+  cv::Mat(3, 3, CV_64FC1, (void *) &imageInfo->K).copyTo(camera.K);
 
-  ROS_DEBUG_STREAM("P: \n" << cameraParams.P);
-  ROS_DEBUG_STREAM("D: \n" << cameraParams.D);
-  ROS_DEBUG_STREAM("K: \n" << cameraParams.K);
+  ROS_DEBUG_STREAM("P: \n" << camera.P);
+  ROS_DEBUG_STREAM("D: \n" << camera.D);
+  ROS_DEBUG_STREAM("K: \n" << camera.K);
 
-  calibrator.setCameraParameters(cameraParams);
+  calibrator.setCamera(&camera);
 }
 
 void RosCalibratorWrapper::processImage(const sensor_msgs::ImageConstPtr &image) {
@@ -80,7 +79,8 @@ void RosCalibratorWrapper::processPointCloud(const sensor_msgs::PointCloud2Const
   fromROSMsg(*pointCloud, pc);
   calibrator.setPointCloud(pc);
 }
-RosCalibratorWrapper::RosCalibratorWrapper(float distance, float radius):
+
+RosCalibratorWrapper::RosCalibratorWrapper(double distance, double radius):
 	calibrator(distance,radius)
 {}
 

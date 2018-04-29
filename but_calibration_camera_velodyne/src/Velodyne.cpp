@@ -15,19 +15,30 @@
 #include <pcl/common/eigen.h>
 #include <pcl/common/transforms.h>
 #include <ros/assert.h>
+#include "but_calibration_camera_velodyne/Constants.h"
 
 using namespace std;
 using namespace cv;
 using namespace pcl;
 using namespace ros;
 
-namespace But::calibration_camera_velodyne
+namespace but::calibration_camera_velodyne
 {
 
 Velodyne::Velodyne::Velodyne(PointCloud<Point> _point_cloud) :
     point_cloud(_point_cloud)
 {
   //getRings();
+}
+
+Velodyne::Velodyne Velodyne::Velodyne::ros2ButCoordinateSystem()
+{
+  return this->transform(0,0,0,M_PI / 2,0,0);
+}
+
+Velodyne::Velodyne Velodyne::Velodyne::but2RosCoordinateSystem()
+{
+  return this->transform(0,0,0,- M_PI / 2,0,0);
 }
 
 Velodyne::Velodyne Velodyne::Velodyne::transform(float x, float y, float z, float rot_x, float rot_y, float rot_z)
@@ -234,7 +245,7 @@ PointCloud<PointXYZRGB> * Velodyne::Velodyne::toPointsXYZRGB() {
 
   for (auto point : point_cloud.points) {
     assert(point.intensity <= 1);
-    uchar intensity = (point.intensity > 0.01) ? 255 : 0;
+    uchar intensity = (point.intensity > 0.005) ? 255 : 0;
     auto range = (point.range - min_found) / (max_found - min_found) * 10;
     auto xyziPoint = PointXYZRGB(intensity,255 - intensity,0);
     xyziPoint.x = point.x;
@@ -410,13 +421,15 @@ Velodyne::Velodyne Velodyne::Velodyne::transform(cv::Mat tvec, cv::Mat rvec) {
   assert(rvec.cols == 1);
   assert(rvec.rows == 3);
   return transform(
-	  tvec.at<float>(0, 0), tvec.at<float>(0, 1), tvec.at<float>(0, 2),
-	  rvec.at<float>(0, 0), rvec.at<float>(0, 1), rvec.at<float>(0, 2)
+	  tvec.at<float>(X), tvec.at<float>(Y), tvec.at<float>(Z),
+	  rvec.at<float>(X), rvec.at<float>(Y), rvec.at<float>(Z)
   );
 }
 
-void Velodyne::Velodyne::view(float trashhold, const char *windowTitle) {
+
+void Velodyne::Velodyne::view(float trashHold, const char *windowTitle) {
   auto cloud_ptr = ::pcl::PointCloud<pcl::PointXYZRGB>::Ptr(this->toPointsXYZRGB());
+
 
   boost::shared_ptr<::pcl::visualization::PCLVisualizer> viewer(
 	  new ::pcl::visualization::PCLVisualizer(windowTitle)

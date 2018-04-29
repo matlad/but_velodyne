@@ -11,7 +11,7 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 
-namespace But::calibration_camera_velodyne
+namespace but::calibration_camera_velodyne
 {
 
 namespace Image
@@ -32,8 +32,8 @@ public:
   // Inverse Distance Tranform
   cv::Mat computeIDTEdgeImage();
   cv::Mat computeIDTEdgeImage(cv::Mat &edge_img);
-  bool detect4Circles(float canny_thresh, float center_thresh, std::vector<cv::Point2f> &centers,
-                      std::vector<float> &radiuses);
+  bool detect4Circles(double canny_thresh, double center_thresh, std::vector<cv::Point2f> &centers,
+                      std::vector<double> &radiuses);
   void threshold(int threshold)
   {
     cv::threshold(img, img, threshold, 255, cv::THRESH_TOZERO);

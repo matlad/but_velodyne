@@ -15,7 +15,7 @@
 using namespace std;
 using namespace cv;
 
-namespace But::calibration_camera_velodyne
+namespace but::calibration_camera_velodyne
 {
 
 namespace Image
@@ -38,7 +38,7 @@ Image::Image(cv::Mat _img) :
     Image::distance_weights = Mat(1, width, CV_32FC1);
     for (int i = 0; i <= middle; i++)
     {
-      float weight = pow(gamma, i);
+      float weight = static_cast<float>(pow(gamma, i));
       Image::distance_weights.at<float>(middle + i) = weight;
       Image::distance_weights.at<float>(middle - i) = weight;
     }
@@ -148,7 +148,7 @@ bool order_Y(const Vec3f &p1, const Vec3f &p2)
   return p1.val[1] < p2.val[1];
 }
 
-bool Image::detect4Circles(float canny_thresh, float center_thresh, vector<Point2f> &centers, vector<float> &radiuses)
+bool Image::detect4Circles(double canny_thresh, double center_thresh, vector<Point2f> &centers, vector<double> &radiuses)
 {
   vector<Vec3f> circles;
   radiuses.clear();
@@ -164,9 +164,9 @@ bool Image::detect4Circles(float canny_thresh, float center_thresh, vector<Point
   // Crop image
   Mat imCorp = src_gray(r);
 
-  for (int thresh = center_thresh; circles.size() < 4 && thresh > 10; thresh -= 5)
+  for (double thresh = center_thresh; circles.size() < 4 && thresh > 10.; thresh -= 5.)
   {
-    HoughCircles(imCorp, circles, CV_HOUGH_GRADIENT, 1, imCorp.rows / 8, canny_thresh, thresh, 0, 0);
+    HoughCircles(imCorp, circles, CV_HOUGH_GRADIENT, 1, imCorp.rows / 8.0, canny_thresh, thresh, 0, 0);
   }
 
 
@@ -174,10 +174,9 @@ bool Image::detect4Circles(float canny_thresh, float center_thresh, vector<Point
   sort(circles.begin(), circles.begin() + 2, order_X);
   sort(circles.begin() + 2, circles.begin() + 4, order_X);
 
-  for (size_t i = 0; i < circles.size(); i++)
-  {
-    centers.push_back(Point2f(r.x + circles[i][0], r.y + circles[i][1]));
-    radiuses.push_back(cvRound(circles[i][2]));
+  for (auto &circle : circles) {
+    centers.push_back(Point2f(r.x + circle[0], r.y + circle[1]));
+    radiuses.push_back(cvRound(circle[2]));
   }
 
   /// Draw the circles detected

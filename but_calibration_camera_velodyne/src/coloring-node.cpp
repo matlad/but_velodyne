@@ -31,7 +31,9 @@
 
 #include <but_calibration_camera_velodyne/Image.h>
 #include <but_calibration_camera_velodyne/Velodyne.h>
-using namespace But::calibration_camera_velodyne;
+#include <but_calibration_camera_velodyne/RosColoringWrapper.h>
+
+using namespace but::calibration_camera_velodyne;
 using std::string;
 
 
@@ -54,29 +56,29 @@ int main(int argc, char **argv)
 
 	ros::Publisher pub = n.advertise<sensor_msgs::PointCloud2>(VELODYNE_COLOR_TOPIC, 1);
 
-	auto colorizer = Colorizer(pub, sixDoF);
+	auto rosColoringWrapper = RosColoringWrapper(pub, sixDoF);
 
 	// Subscribe input camera image
 	image_transport::ImageTransport it(n);
 	image_transport::Subscriber     sub = it.subscribe(
 			CAMERA_FRAME_TOPIC,
 			10,
-			&Colorizer::imageCallback,
-			&colorizer
+			&RosColoringWrapper::imageFrameCallback,
+			&rosColoringWrapper
 	);
 
 	ros::Subscriber info_sub = n.subscribe(
 			CAMERA_INFO_TOPIC,
 			10,
-			&Colorizer::cameraInfoCallback,
-			&colorizer
+			&RosColoringWrapper::cameraInfoCallback,
+			&rosColoringWrapper
 	);
 
 	ros::Subscriber pc_sub = n.subscribe<sensor_msgs::PointCloud2>(
 			VELODYNE_TOPIC,
 			1,
-			&Colorizer::pointCloudCallback,
-			&colorizer
+			&RosColoringWrapper::pointCloudCallback,
+			&rosColoringWrapper
 	);
 
 	ros::spin();
