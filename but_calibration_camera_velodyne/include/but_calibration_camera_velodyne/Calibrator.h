@@ -92,10 +92,12 @@ class Calibrator {
    * @param radius3D  rádius kruhů v poitCloudu
    * @return
    */
-  Calibration6DoF findTranslation(std::vector<cv::Point2f> image,
-								  std::vector<cv::Point3f> velodyne,
-								  double radius2D,
-								  double radius3D);
+  void findTranslation(std::vector<cv::Point2f> image,
+                       std::vector<cv::Point3f> velodyne,
+                       double radius2D,
+                       double radius3D,
+                       cv::Mat rVec,
+                       cv::Mat tVec);
 
   /**
    * @brief Doladění externách parametrů
@@ -103,12 +105,13 @@ class Calibrator {
    * v každém kroku je vypočítaná krosreference hran v obraze a pointCloudu (@see Similarity::edgeSimilarity)
    * a hledá se, která poloha má tuto hodnotu nejvyšší;
    */
-  void calibrationRefinement(Calibration6DoF &rough,
-							 float max_translation,
-							 float max_rotation,
-							 unsigned steps,
-							 Calibration6DoF &best_calibration,
-							 Calibration6DoF &average);
+  void calibrationRefinement(cv::Mat tVec,
+                             cv::Mat rVec,
+                             float max_translation,
+                             float max_rotation,
+                             unsigned steps,
+                             Calibration6DoF &best_calibration,
+                             Calibration6DoF &average);
 
   Calibration6DoF calibration(bool doRefinement);
 

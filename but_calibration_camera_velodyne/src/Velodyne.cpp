@@ -114,11 +114,11 @@ Velodyne::Velodyne Velodyne::Velodyne::transform(vector<float> DoF)
 
 	vector<vector<Velodyne::Point *> > Velodyne::Velodyne::getRings()
 	{
-		vector<vector<Point *> > rings(Velodyne::Velodyne::RINGS_COUNT);
+		vector<vector<Point *>> rings(Velodyne::Velodyne::RINGS_COUNT);
 		for (PointCloud<Point>::iterator pt = point_cloud.points.begin();
 			 pt < point_cloud.points.end(); pt++)
 		{
-			ROS_ASSERT(pt->ring < RINGS_COUNT);
+			assert(pt->ring < RINGS_COUNT);
 			pt->range = sqrt(pt->x * pt->x + pt->y * pt->y + pt->z * pt->z);
 
 			rings[pt->ring].push_back(&(*pt));
@@ -135,6 +135,11 @@ Velodyne::Velodyne Velodyne::Velodyne::transform(vector<float> DoF)
 	{
 		intensityByDiff(Processing::INTENSITY_EDGES);
 	}
+
+  void Velodyne::Velodyne::intensityByRangeDiff2()
+  {
+
+  }
 
 void Velodyne::Velodyne::intensityByDiff(Processing processing) {
   auto rings = this->getRings();
@@ -214,6 +219,128 @@ void Velodyne::Velodyne::intensityByDiff(Processing processing) {
   normalizeIntensity(0.0, 1.0);
 }
 
+void Velodyne::Velodyne::convolution() {
+
+
+  vector<vector<int>> convolutionKernel_h =
+      {
+          { 1,  2,  1},
+          { 0,  0,  0},
+          {-1, -2, -1}
+      };
+
+  vector<vector<int>> convolutionKernel_v =
+      {
+          { 1,  0, -1},
+          { 2,  0, -2},
+          { 1,  0, -1}
+      };
+
+
+  vector<pair<Point *,float>> newIntensityMap;
+  float new_intensity_h = 0;
+  float new_intensity_v = 0;
+  float new_intensity = 0;
+  auto rings = getRings();
+
+  size_t ringsCount = rings.size();
+  size_t rotationsCount = rings[0].size();
+  size_t convolutionKernelWidth = convolutionKernel_h.size();
+  size_t convolutionKernelHeight = convolutionKernel_h[0].size();
+
+
+  // Procházení mračna bodů.
+  for(int ring = 0; ring < rings.size(); ring++)
+  {
+
+    if(ring == 18)
+    {
+      continue;
+    }
+
+    for(int rotation = 0; rotation < rings[0].size(); rotation++)
+    {
+
+
+      // Procházení konvoluční matice_h.
+      for(int y = 0;  y < convolutionKernel_h.size(); y++)
+      {
+        for(int x = 0;  x < convolutionKernel_h[0].size(); x++)
+        {
+        	int rotationShift = x - (convolutionKernel_h.size() / 2);
+          int ringShift = y - (convolutionKernel_h[0].size() / 2);
+
+          int shiftRing = ring + ringShift;
+          int shiftRotation = rotation + rotationShift;
+
+
+          if(shiftRing < 0)
+            shiftRing = 0;
+
+          if(shiftRing >= ringsCount);
+            shiftRing = ringsCount -1;
+
+          if(shiftRotation < 0)
+            shiftRotation = 0;
+
+          if(shiftRotation >= rotationsCount)
+            shiftRotation = rotationsCount -1;
+
+
+          auto shiftPointPt = rings[shiftRing][shiftRotation];
+          new_intensity_h += shiftPointPt->range * convolutionKernel_h[y][x];
+        }
+      }
+
+
+			// Procházení konvoluční matice_v.
+			for(int y = 0;  y < convolutionKernel_v.size(); y++)
+			{
+				for(int x = 0;  x < convolutionKernel_v[0].size(); x++)
+				{
+					size_t rotationShift = x - (convolutionKernel_v.size() / 2);
+					size_t ringShift = y - (convolutionKernel_v[0].size() / 2);
+
+          int shiftRing = ring + ringShift;
+          int shiftRotation = rotation + rotationShift;
+
+
+          if(shiftRing < 0)
+            shiftRing = 0;
+
+          if(shiftRing >= ringsCount);
+            shiftRing = ringsCount -1;
+
+          if(shiftRotation < 0)
+            shiftRotation += rotationsCount;
+
+          if(shiftRotation >= rotationsCount)
+            shiftRotation -= rotationsCount;
+
+
+
+          auto shiftPointPt = rings[shiftRing][shiftRotation];
+					new_intensity_v += shiftPointPt->range * convolutionKernel_v[y][x];
+				}
+			}
+
+
+
+
+      new_intensity = sqrt(new_intensity_h * new_intensity_h + new_intensity_v * new_intensity_v);
+      auto point = rings[ring][rotation];
+      auto pair_p = pair<Point *,float>(point,new_intensity);
+      newIntensityMap.emplace_back(pair_p);
+
+    }
+  }
+
+  for (auto [pointPt,intensity]:newIntensityMap) {
+    pointPt->intensity = intensity;
+  }
+
+}
+
 	PointCloud<PointXYZ> *Velodyne::Velodyne::toPointsXYZ()
 	{
 		PointCloud<PointXYZ>             *new_cloud = new PointCloud<PointXYZ>();
@@ -229,7 +356,7 @@ PointCloud<PointXYZRGB> * Velodyne::Velodyne::toPointsXYZRGB() {
 
   auto new_cloud = new PointCloud<PointXYZRGB>();
 
-  this->normalizeIntensity(0,1);
+  this->normalizeIntensity(15,255);
 
 
   float min_found = INFINITY;
@@ -238,22 +365,24 @@ PointCloud<PointXYZRGB> * Velodyne::Velodyne::toPointsXYZRGB() {
   for (PointCloud<Point>::iterator pt = point_cloud.points.begin();
 	   pt < point_cloud.points.end(); pt++)
   {
-	max_found = MAX(max_found, pt->range);
-	min_found = MIN(min_found, pt->range);
+    max_found = MAX(max_found, pt->range);
+    min_found = MIN(min_found, pt->range);
   }
 
 
 
   for (auto point : point_cloud.points) {
-    assert(point.intensity <= 1);
-    uchar intensity = (point.intensity > 0.005) ? 255 : 0;
-    auto range = (point.range - min_found) / (max_found - min_found) * 10;
-    auto xyziPoint = PointXYZRGB(intensity,255 - intensity,0);
+    assert(point.intensity <= 255);
+    uchar intensity = point.intensity;
+    auto range = (point.range - min_found) / (max_found - min_found) * 255;
+    auto xyziPoint = PointXYZRGB(intensity, intensity, intensity);
     xyziPoint.x = point.x;
     xyziPoint.y = point.y;
     xyziPoint.z = point.z;
-	new_cloud->push_back(xyziPoint);
+	  new_cloud->push_back(xyziPoint);
   }
+
+  normalizeIntensity(0,1);
 
   return new_cloud;
 }
@@ -420,8 +549,8 @@ Velodyne::Velodyne Velodyne::Velodyne::transform(cv::Mat tvec, cv::Mat rvec) {
 	ASSERT_IS_VEC_3D(tvec);
 	ASSERT_IS_VEC_3D(rvec);
   return transform(
-	  tvec.at<double>(X), tvec.at<double>(Y), tvec.at<double>(Z),
-	  rvec.at<double>(X), rvec.at<double>(Y), rvec.at<double>(Z)
+      (float)tvec.at<double>(X), (float)tvec.at<double>(Y), (float)tvec.at<double>(Z),
+      (float)rvec.at<double>(X), (float)rvec.at<double>(Y), (float)rvec.at<double>(Z)
   );
 }
 
@@ -440,12 +569,12 @@ void Velodyne::Velodyne::view(float trashHold, const char *windowTitle) {
   viewer->addPointCloud<::pcl::PointXYZRGB>(cloud_ptr, rgb, "sample cloud");
   viewer->setPointCloudRenderingProperties(::pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");
   viewer->addCoordinateSystem(0.3);
-  viewer->initCameraParameters();
+  //viewer->initCameraParameters();
   while (!viewer->wasStopped()) {
-	viewer->spinOnce(100);
-	boost::this_thread::sleep(boost::posix_time::microseconds(
-		100000));
-  }
+    viewer->spinOnce(100);
+    boost::this_thread::sleep(boost::posix_time::microseconds(
+      100000));
+    }
 }
 
 void Velodyne::Velodyne::viewMarker(vector<Point3f> centers3D, vector<float> radii3D, const char *windowTitle) {
@@ -464,36 +593,14 @@ void Velodyne::Velodyne::viewMarker(vector<Point3f> centers3D, vector<float> rad
   viewer->setPointCloudRenderingProperties(::pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");
   viewer->addCoordinateSystem(0.3);
 
-
   ModelCoefficients circle_1;
-  circle_1.values.resize (7);    // We need 7 values
-  circle_1.values[0] = centers3D[0].x;
-  circle_1.values[1] = centers3D[0].y;
-  circle_1.values[2] = centers3D[0].z;
-  circle_1.values[3] = 0;
-  circle_1.values[4] = 0;
-  circle_1.values[5] = 0.001;
-  circle_1.values[6] = radii3D[0];
+  CIRCLE_3D(circle_1,centers3D[0],radii3D[0])
 
   ModelCoefficients circle_2;
-  circle_2.values.resize (7);    // We need 7 values
-  circle_2.values[0] = centers3D[1].x;
-  circle_2.values[1] = centers3D[1].y;
-  circle_2.values[2] = centers3D[1].z;
-  circle_2.values[3] = 0;
-  circle_2.values[4] = 0;
-  circle_2.values[5] = 0.001;
-  circle_2.values[6] = radii3D[1];
+  CIRCLE_3D(circle_2,centers3D[1],radii3D[1])
 
   ModelCoefficients circle_3;
-  circle_3.values.resize (7);    // We need 7 values
-  circle_3.values[0] = centers3D[2].x;
-  circle_3.values[1] = centers3D[2].y;
-  circle_3.values[2] = centers3D[2].z;
-  circle_3.values[3] = 0;
-  circle_3.values[4] = 0;
-  circle_3.values[5] = 0.001;
-  circle_3.values[6] = radii3D[2];
+  CIRCLE_3D(circle_3,centers3D[2],radii3D[2])
 
   ModelCoefficients circle_4;
   circle_4.values.resize (7);    // We need 7 values
@@ -514,7 +621,7 @@ void Velodyne::Velodyne::viewMarker(vector<Point3f> centers3D, vector<float> rad
   viewer->addCylinder(circle_1,"c1");
   viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.5, 0.5, 0, "c1");
 
-  viewer->initCameraParameters();
+  //viewer->initCameraParameters();
   while (!viewer->wasStopped()) {
 	viewer->spinOnce(100);
 	boost::this_thread::sleep(boost::posix_time::microseconds(

@@ -26,11 +26,29 @@ Calibration3DMarker::Calibration3DMarker(cv::Mat _frame_gray, cv::Mat _P, ::Poin
   // Identifikace vertikálních hran ve scanu
   scan.intensityByRangeDiff();
   PointCloud<Velodyne::Point> visible_cloud;
+
+
+
+  float a = P.at<float>(0,0);
+  float b = P.at<float>(0,2);
+  float c = P.at<float>(1,1);
+  float d = P.at<float>(1,2);
+
+  P.at<float>(0,0) = (float)4.13365814e+02;
+  P.at<float>(0,2) = (float)3.29170532e+02;
+  P.at<float>(1,1) = (float)3.82713135e+02;
+  P.at<float>(1,2) = (float)3.22920532e+02;
+
   // Výřez
   scan.project(P, Rect(0, 0, 640, 480), &visible_cloud);
   Velodyne::Velodyne visible_scan(visible_cloud);
   visible_scan.normalizeIntensity();
   //visible_scan.view();
+
+  P.at<float>(0,0) = a;
+  P.at<float>(0,2) = b;
+  P.at<float>(1,1) = c;
+  P.at<float>(1,2) = d;
 
   // Odfiltrování bodů které nejsou hranou
   Velodyne::Velodyne thresholded_scan = visible_scan.threshold(0.1);

@@ -53,31 +53,6 @@ void Colorizer::setPointCloud(Velodyne::Velodyne pointCloud) { ;
 PointCloud<PointXYZRGB> Colorizer::colorize() {
 
 
-//  cv::rectangle(image,
-//				cv::Point(300, 100),
-//				cv::Point(500, 300),
-//				CV_RGB(255, 0, 0),
-//				CV_FILLED);
-//  cv::rectangle(image,
-//				cv::Point(100, 200),
-//				cv::Point(300, 400),
-//				CV_RGB(0, 255, 0),
-//				CV_FILLED);
-//  cv::rectangle(image,
-//				cv::Point(500, 200),
-//				cv::Point(700, 400),
-//				CV_RGB(0, 0, 255),
-//				CV_FILLED);
-//  cv::rectangle(image,
-//				cv::Point(300, 400),
-//				cv::Point(500, 500),
-//				CV_RGB(255, 0, 255),
-//				CV_FILLED);
-
-
-
-
-
   auto colorCloud = colourByFishEye();
 
   // reverse axix switching:
@@ -105,7 +80,7 @@ PointCloud<PointXYZRGB> Colorizer::colourByFishEye() {
 
   cv::Rect frame(cv::Point(0, 0), color.size());
   pointCloudTransform.normalizeIntensity(0,1);
-  pointCloudTransform.view(0, "pointCloudTransform");
+  //pointCloudTransform.view(0, "pointCloudTransform");
   for (auto pt : pointCloudTransform) {
 
     cv::Point xy = Velodyne::Velodyne::project(pt, camera->P);
@@ -133,45 +108,47 @@ PointCloud<PointXYZRGB> Colorizer::colourByFishEye() {
   vector<Point3f> cvPointCloud;
   auto pclPointCloud = this->pointCloud.getPointCloud();
 
-  for (auto point:pclPointCloud) {
-	cvPointCloud.push_back(Point3d(point.x, point.y, point.z));
+  for (auto point:pointCloudTransform) {
+	  cvPointCloud.push_back(Point3d((double)point.x, (double)point.y, (double)point.z));
   }
 
-  Mat rvec,tvec;
-  camera->tvec.convertTo(tvec,CV_64FC1);
-  camera->rvec.convertTo(rvec,CV_64FC1);
+  Mat zeroVec = VEC_3D;
 
-  Mat projectedPoints;
+
+  vector<Point2f> projectedPoints;
 
   fisheye::projectPoints(
 	  cvPointCloud,
 	  projectedPoints,
-	  tvec,
-	  rvec,
+	  zeroVec,
+	  zeroVec,
 	  camera->K,
 	  camera->D
   );
+
+  cout << *camera << endl;
 
   Vec3b rgbDefault(255, 0, 0);
 
   for (size_t iter = 0; iter < pclPointCloud.points.size(); iter++) {
 
-	assert(iter <= INT_MAX);
-	Point2i xy = projectedPoints.at<Point2f>(0, (int) iter);
-	Vec3b rgb;
+    assert(iter <= INT_MAX);
 
-	if (xy.y < 0 || xy.x < 0 || xy.y > image.rows || xy.x > image.cols) {
-	  rgb = rgbDefault;
-	} else {
-	  rgb = Image::Image::atf(image, xy);
-	}
+    Point2f xy = projectedPoints[iter];
+    Vec3b rgb;
 
-	PointXYZRGB pt_rgb(rgb.val[2], rgb.val[1], rgb.val[0]);
-	pt_rgb.x = pclPointCloud.at(iter).x;
-	pt_rgb.y = pclPointCloud.at(iter).y;
-	pt_rgb.z = pclPointCloud.at(iter).z;
+    if (pclPointCloud.at(iter).z < 0 || xy.y < 0 || xy.x < 0 || xy.y > image.rows || xy.x > image.cols) {
+      rgb = rgbDefault;
+    } else {
+      rgb = Image::Image::atf(image, xy);
+    }
 
-	colorPointCloud.push_back(pt_rgb);
+    PointXYZRGB pt_rgb(rgb.val[RED], rgb.val[GREEN], rgb.val[BLUE]);
+    pt_rgb.x = pclPointCloud.at(iter).x;
+    pt_rgb.y = pclPointCloud.at(iter).y;
+    pt_rgb.z = pclPointCloud.at(iter).z;
+
+    colorPointCloud.push_back(pt_rgb);
   }
   return colorPointCloud;
 }

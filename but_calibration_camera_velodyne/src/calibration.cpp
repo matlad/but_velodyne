@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
   calibrator.setImage(image);
   calibrator.setPointCloud(pointCloud);
 
-  Calibration6DoF calibration6DoF = calibrator.calibration(false);
+  Calibration6DoF calibration6DoF = calibrator.calibration(true);
   calibration6DoF.print();
 
   return EXIT_SUCCESS;

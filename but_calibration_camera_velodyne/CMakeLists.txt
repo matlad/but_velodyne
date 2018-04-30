@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(but_calibration_camera_velodyne)
-set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS} -g")
+set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS} -g")
 
 find_package(catkin 
   REQUIRED COMPONENTS
@@ -41,8 +41,6 @@ add_executable(calibrationNonRos
                include/but_calibration_camera_velodyne/Calibration3DMarker.h
                src/Calibrator.cpp
                include/but_calibration_camera_velodyne/Calibrator.h
-               src/RosCalibratorWrapper.cpp
-               include/but_calibration_camera_velodyne/RosCalibratorWrapper.h
                src/Camera.cpp
                include/but_calibration_camera_velodyne/Camera.h
                src/Calibration6DoF.cpp
@@ -52,8 +50,8 @@ add_executable(calibrationNonRos
                src/FishEyeCamera.cpp
                include/but_calibration_camera_velodyne/FishEyeCamera.h
 
-               src/Colorizer.cpp #todo
-               include/but_calibration_camera_velodyne/Colorizer.h #todo
+               src/Colorizer.cpp #todo remove
+               include/but_calibration_camera_velodyne/Colorizer.h #todo remove
                src/types.cpp)
 target_link_libraries(calibrationNonRos ${PCL_LIBRARIES})
 target_link_libraries(calibrationNonRos ${catkin_LIBRARIES})
@@ -80,7 +78,11 @@ add_executable(calibration
                src/FishEyeCamera.cpp
                include/but_calibration_camera_velodyne/FishEyeCamera.h
                include/but_calibration_camera_velodyne/Constants.h
-               include/but_calibration_camera_velodyne/types.h)
+               src/types.cpp
+               include/but_calibration_camera_velodyne/types.h
+               src/Colorizer.cpp #todo remove
+               include/but_calibration_camera_velodyne/Colorizer.h #todo remove
+               )
 target_link_libraries(calibration ${PCL_LIBRARIES}) 
 target_link_libraries(calibration ${catkin_LIBRARIES})
 

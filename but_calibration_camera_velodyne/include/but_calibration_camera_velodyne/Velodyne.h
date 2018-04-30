@@ -238,8 +238,12 @@ class Velodyne {
    */
   Velodyne but2RosCoordinateSystem();
 
+	void convolution();
+	void intensityByRangeDiff2();
+
  protected:
   ::pcl::PointCloud<Point> point_cloud;
+
 };
 
 } /* NAMESPACE Velodyne */

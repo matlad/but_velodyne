@@ -59,7 +59,7 @@ void Calibrator::setPointCloud(pcl::PointCloud<but::calibration_camera_velodyne:
   this->pointCloud = Velodyne::Velodyne(pointCloud);
   this->pointCloud = this->pointCloud.transform(0, 0, 0, M_PI / 2, 0, 0);
   this->edgePointCloud = Velodyne::Velodyne(this->pointCloud);
-  edgePointCloud.intensityByDiff(Processing::DISTORTIONS);
+  edgePointCloud.intensityByRangeDiff();
   //edgePointCloud.view(POINTCLOUD_EDGE_TRASH_HOLD,"Set Pointcloud");
 //  this->pointCloud.normalizeIntensity(0.,1.);
   //this->pointCloud.view(0);
@@ -124,8 +124,8 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
     return Calibration6DoF::wrong();
   }
 
-  Mat frvec = VEC_3D;
-  Mat ftvec = VEC_3D;
+  Mat rVec = VEC_3D;
+  Mat tVec = VEC_3D;
 
   cout << "jdeme na pnp" << endl;
 
@@ -145,47 +145,67 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
   }
 
   Calibration6DoF calib;
-  solvePnP(centers3D, centers2D, camera->K, Mat(), frvec, ftvec);
+  pcl::PointCloud<pcl::PointXYZRGB> * colorCloud;
 
-  calib.set(ftvec, frvec, getSimilarity(ftvec, frvec, "solvePnP"));
-  cout << "solvePnP" << endl;
-  calib.print();
+//##############################################################################
+//
+//  solvePnP(centers3D, centers2D, camera->K, Mat(), rVec, tVec);
+//
+//  calib.set(tVec, rVec, getSimilarity(tVec, rVec, "solvePnP"));
+//  cout << "solvePnP" << endl;
+//  calib.print();
+//
+//  camera->rvec = rVec;
+//  camera->tvec = tVec;
+//  colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());
+//  Velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
 
-  solvePnP(
-      centers3D,
-      centers2D,
-      camera->K,
-      Mat(),
-      frvec,
-      ftvec,
-      false,
-      cv::SOLVEPNP_P3P
-  );
+//##############################################################################
 
-  calib.set(ftvec, frvec, getSimilarity(ftvec, frvec, "solvePnP - P3P"));
-  cout << "solvePnP - P3P" << endl;
-  calib.print();
-  camera->rvec = frvec;
-  camera->tvec = ftvec;
-  auto colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());
-  Velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
+//  solvePnP(
+//      centers3D,
+//      centers2D,
+//      camera->K,
+//      Mat(),
+//      rVec,
+//      tVec,
+//      false,
+//      cv::SOLVEPNP_P3P
+//  );
+//
+//  calib.set(tVec, rVec, getSimilarity(tVec, rVec, "solvePnP - P3P"));
+//  cout << "solvePnP - P3P" << endl;
+//  calib.print();
+//
+//  camera->rvec = rVec;
+//  camera->tvec = tVec;
+//  colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());
+//  Velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
+
+
+//##############################################################################
+
 
   solvePnP(centers3D,
            centers2D,
            camera->K,
            Mat(),
-           frvec,
-           ftvec,
+           rVec,
+           tVec,
            false,
            cv::SOLVEPNP_AP3P);
 
-  calib.set(ftvec, frvec, getSimilarity(ftvec, frvec, "solvePnP - AP3P"));
+  calib.set(tVec, rVec, getSimilarity(tVec, rVec, "solvePnP - AP3P"));
   cout << "solvePnP - AP3P" << endl;
   calib.print();
-  camera->rvec = frvec;
-  camera->tvec = ftvec;
+
+  camera->rvec = rVec;
+  camera->tvec = tVec;
   colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());
   Velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
+
+
+//##############################################################################
 
   double radius2D =
       accumulate(radii2D.begin(), radii2D.end(), 0.0) / radii2D.size();
@@ -193,117 +213,133 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
       accumulate(radii3D.begin(), radii3D.end(), 0.0) / radii3D.size();
 
   // rough calibration
-  auto translation = findTranslation(centers2D, centers3D, radius2D, radius3D);
+  findTranslation(centers2D, centers3D, radius2D, radius3D, rVec, tVec);
+  calib.set(tVec, rVec, getSimilarity(tVec, rVec, "findTranslation"));
   cout << "findTranslation" << endl;
-  translation.print();
-  camera->rvec = frvec;
-  camera->tvec = ftvec;
-  colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());
-  Velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
-
-  frvec.at<double>(X) = translation.rX();
-  frvec.at<double>(Y) = translation.rY();
-  frvec.at<double>(Z) = translation.rZ();
-  ftvec.at<double>(X) = translation.tX();
-  ftvec.at<double>(Y) = translation.tY();
-  ftvec.at<double>(Z) = translation.tZ();
-
-  camera->rvec = frvec;
-  camera->tvec = ftvec;
-  colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());
-  Velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
-
-  solvePnPRansac(centers3D,
-                 centers2D,
-                 camera->K,
-                 Mat(),
-                 frvec,
-                 ftvec,
-                 false,
-                 100,
-                 8.0);
-
-  calib.set(ftvec, frvec, getSimilarity(ftvec, frvec, "solvePnPRansac"));
-  cout << "solvePnPRansac" << endl;
   calib.print();
 
-  Mat tvec(1, 3, CV_64FC1, translation.DoF.data());
-  Mat rvec(1, 3, CV_64FC1, translation.DoF.data() + 3);
-
-  solvePnPRansac(centers3D,
-                 centers2D,
-                 camera->K,
-                 Mat(),
-                 rvec,
-                 tvec,
-                 true,
-                 100,
-                 8.0);
-
-  calib.set(tvec,
-            rvec,
-            getSimilarity(tvec, rvec, "solvePnPRansac + findTranslation"));
-  cout << "solvePnPRansac + findTranslation" << endl;
-  calib.print();
-  camera->rvec = frvec;
-  camera->tvec = ftvec;
+  camera->rvec = rVec;
+  camera->tvec = tVec;
   colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());
   Velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
 
-  centers3D.pop_back();
-  centers2D.pop_back();
 
-  std::vector<Mat> rvecs, tvecs;
+////##############################################################################
+//
+//  solvePnPRansac(centers3D,
+//                 centers2D,
+//                 camera->K,
+//                 Mat(),
+//                 rVec,
+//                 tVec,
+//                 true,
+//                 100,
+//                 0.8);
+//
+//  calib.set(tVec, rVec, getSimilarity(tVec, rVec, "solvePnPRansac + findTranslation\""));
+//  cout << "solvePnPRansac + findTranslation\"" << endl;
+//  calib.print();
+//
+//  camera->rvec = rVec;
+//  camera->tvec = tVec;
+//  colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());
+//  Velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
+//
+////##############################################################################
+//
+//
+//  solvePnPRansac(centers3D,
+//                 centers2D,
+//                 camera->K,
+//                 Mat(),
+//                 rVec,
+//                 tVec,
+//                 false,
+//                 100,
+//                 .8);
+//
+//  calib.set(tVec, rVec, getSimilarity(tVec, rVec, "solvePnPRansac"));
+//  cout << "solvePnPRansac" << endl;
+//  calib.print();
+//
+//  camera->rvec = rVec;
+//  camera->tvec = tVec;
+//  colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());
+//  Velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
+//
+//
+////##############################################################################
+//
+//
+//  centers3D.pop_back();
+//  centers2D.pop_back();
+//
+//
+//  std::vector<Mat> rvecs, tvecs;
+//
+//  cv::solveP3P(centers3D,
+//               centers2D,
+//               camera->K,
+//               Mat(),
+//               rvecs,
+//               tvecs,
+//               cv::SOLVEPNP_P3P);
+//
+//  for (unsigned int i = 0; i < rvecs.size(); ++i) {
+//    calib.set(tvecs[i], rvecs[i], getSimilarity(tvecs[i], rvecs[i], "solveP3P"));
+//    cout << "solveP3P " << i << endl;
+//    calib.print();
+//  }
+//
+//
+////##############################################################################
+//
+//
+//  cv::solveP3P(centers3D,
+//               centers2D,
+//               camera->K,
+//               Mat(),
+//               rvecs,
+//               tvecs,
+//               cv::SOLVEPNP_AP3P);
+//
+//  for (unsigned int i = 0; i < rvecs.size(); ++i) {
+//    calib.set(tvecs[i], rvecs[i], getSimilarity(tvecs[i], rvecs[i], "solveAP3P"));
+//    cout << "solveAP3P " << i << endl;
+//    calib.print();
+//  }
+//
+//
+////##############################################################################
 
-  cv::solveP3P(centers3D,
-               centers2D,
-               camera->K,
-               Mat(),
-               rvecs,
-               tvecs,
-               cv::SOLVEPNP_P3P);
-
-  for (unsigned int i = 0; i < rvecs.size(); ++i) {
-    calib.set(tvecs[i], rvecs[i], getSimilarity(ftvec, frvec, "solveP3P"));
-    cout << "solveP3P " << i << endl;
-    calib.print();
-  }
-
-  cv::solveP3P(centers3D,
-               centers2D,
-               camera->K,
-               Mat(),
-               rvecs,
-               tvecs,
-               cv::SOLVEPNP_AP3P);
-
-  for (unsigned int i = 0; i < rvecs.size(); ++i) {
-    calib.set(tvecs[i], rvecs[i], getSimilarity(ftvec, frvec, "solveAP3P"));
-    cout << "solveAP3P " << i << endl;
-    calib.print();
-  }
 
   if (doRefinement) {
-    ROS_INFO("Coarse calibration:");
-    translation.print();
-    ROS_INFO("Refinement process started - this may take a minute.");
     u_int divisions = 5;
     float distance_transl = 0.02;
     float distance_rot = 0.01;
     Calibration6DoF best_calibration, avg_calibration;
-    calibrationRefinement(
-        translation,
-        distance_transl,
-        distance_rot,
-        divisions,
-        best_calibration,
-        avg_calibration
-    );
-    best_calibration.print();
-    return avg_calibration;
-  } else {
-    return translation;
+    calibrationRefinement(tVec,
+                          rVec,
+                          distance_transl,
+                          distance_rot,
+                          divisions,
+                          best_calibration,
+                          avg_calibration);
+    avg_calibration.print();
+
+    calib.set(tVec, rVec, getSimilarity(tVec, rVec, "calibrationRefinement"));
+    cout << "calibrationRefinement" << endl;
+    calib.print();
+
+    camera->rvec = rVec;
+    camera->tvec = tVec;
+    colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());
+    Velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
   }
+    return calib;
+
+
+
 }
 
 Calibrator::Calibrator(double circleDistance, double radius) : circleDistance(
@@ -355,102 +391,62 @@ double Calibrator::getSimilarity(cv::Mat &tvec,
   return CC;
 }
 
-double Calibrator::getSimilarity2(cv::Mat &tvec,
-                                  cv::Mat &rvec,
-                                  const char *title) {
-
-  ASSERT_IS_VEC_3D(tvec);
-  ASSERT_IS_VEC_3D(rvec);
-
-
-  cv::Mat color;
-  auto img = edgeImage->getImg();
-  cv::cvtColor(img, color, cv::COLOR_GRAY2BGR);
-
-  cv::Rect frame(cv::Point(0, 0), img.size());
-  double CC = 0;
-  auto transform = edgePointCloud.transform(tvec, rvec);
-  cout << "tvec" << tvec << endl;
-
-  for (auto pt : transform) {
-
-    cv::Point xy = Velodyne::Velodyne::project(pt, camera->P);
-    //cv::Point xy = camera->project(Point3f(pt.x, pt.y, pt.z));
-
-    if (pt.z > 0 && xy.inside(frame)) {
-
-      assert(pt.intensity <= 1);
-      // mám šedý obrázek převedeny do egb, všechny kanály jsou si rovny vezmem jeden kanál a vynásobíme intenzitou
-      CC += img.at<cv::Vec3b>(xy)[RED] * pt.intensity;
-
-      // Překreslení bodů z kamery projekcí bodu z lidaru
-      color.at<cv::Vec3b>(xy)[RED] = static_cast<u_char>(pt.intensity * 255);
-      color.at<cv::Vec3b>(xy)[GREEN] =
-          pt.intensity < POINTCLOUD_EDGE_TRASH_HOLD ? 255_rgb_c : 0_rgb_c;
-      color.at<cv::Vec3b>(xy)[BLUE] =
-          pt.intensity < POINTCLOUD_EDGE_TRASH_HOLD ? 0_rgb_c : 255_rgb_c;
-    }
-  }
-  SHOW_IMAGE(color, title);
-  return CC;
-}
-
 Calibrator::~Calibrator() {
   delete edgeImage;
 }
 
-Calibration6DoF Calibrator::findTranslation(std::vector<cv::Point2f> image,
-                                            std::vector<cv::Point3f> velodyne,
-                                            double radius2D,
-                                            double radius3D) {
+void Calibrator::findTranslation(std::vector<cv::Point2f> image,
+                                 std::vector<cv::Point3f> velodyne,
+                                 double radius2D,
+                                 double radius3D,
+                                 cv::Mat tVec,
+                                 cv::Mat rVec) {
   auto projection = camera->P;
 
-  Mat rvec = VEC_3D;
-  Mat tvec = VEC_3D;
+  rVec = VEC_3D;
+  tVec = VEC_3D;
 
   double focal_len = camera->K_fx();
 
   // t_z:
-  tvec.at<double>(Z) = radius3D * focal_len / radius2D - velodyne.front().z;
+  tVec.at<double>(Z) = radius3D * focal_len / radius2D - velodyne.front().z;
 
   double principal_x = camera->K_cx();
   double principal_y = camera->K_cy();
 
   for (size_t i = 0; i < image.size(); i++) {
     // t_x:
-    tvec.at<double>(X) +=
-        (image[i].x - principal_x) * (velodyne[i].z + tvec.at<double>(Z))
+    tVec.at<double>(X) +=
+        (image[i].x - principal_x) * (velodyne[i].z + tVec.at<double>(Z))
             / focal_len
             - velodyne[i].x;
     // t_y:
-    tvec.at<double>(Y) +=
-        (image[i].y - principal_y) * (velodyne[i].z + tvec.at<double>(Z))
+    tVec.at<double>(Y) +=
+        (image[i].y - principal_y) * (velodyne[i].z + tVec.at<double>(Z))
             / focal_len
             - velodyne[i].y;
   }
-  tvec.at<double>(X) /= image.size();
-  tvec.at<double>(Y) /= image.size();
-
-
-
-  // no rotation and value of calibration
-  return Calibration6DoF(tvec,
-                         rvec,
-                         getSimilarity(tvec, rvec, "findTranslation"));
+  tVec.at<double>(X) /= image.size();
+  tVec.at<double>(Y) /= image.size();
 }
 
-void Calibrator::calibrationRefinement(
-    Calibration6DoF &rough,
-    float max_translation,
-    float max_rotation,
-    unsigned steps,
-    Calibration6DoF &best_calibration,
-    Calibration6DoF &average
-) {
+void Calibrator::calibrationRefinement(cv::Mat tVec,
+                                       cv::Mat rVec,
+                                       float max_translation,
+                                       float max_rotation,
+                                       unsigned steps,
+                                       Calibration6DoF &best_calibration,
+                                       Calibration6DoF &average) {
 
-  float x_rough = static_cast<float>(rough.tX());
-  float y_rough = static_cast<float>(rough.tY());
-  float z_rough = static_cast<float>(rough.tZ());
+  IN_PROGRES_INIT();
+
+  float x_rough = static_cast<float>(tVec.at<double>(X));
+  float y_rough = static_cast<float>(tVec.at<double>(Y));
+  float z_rough = static_cast<float>(tVec.at<double>(Z));
+
+  float x_rough_r = static_cast<float>(rVec.at<double>(X));
+  float y_rough_r = static_cast<float>(rVec.at<double>(Y));
+  float z_rough_r = static_cast<float>(rVec.at<double>(Z));
 
   auto P = camera->P;
 
@@ -460,9 +456,9 @@ void Calibrator::calibrationRefinement(
   float x_min = x_rough - max_translation;
   float y_min = y_rough - max_translation;
   float z_min = z_rough - max_translation;
-  float x_rot_min = -max_rotation;
-  float y_rot_min = -max_rotation;
-  float z_rot_min = -max_rotation;
+  float x_rot_min = x_rough_r - max_rotation;
+  float y_rot_min = y_rough_r - max_rotation;
+  float z_rot_min = z_rough_r - max_rotation;
 
   float step_transl = max_translation * 2 / (steps - 1);
   float step_rot = max_rotation * 2 / (steps - 1);
@@ -520,8 +516,8 @@ void Calibrator::calibrationRefinement(
                 average += calibration;
                 counter++;
               }
-              cout << counter << ".\t" << std::flush;
-              //calibration.print();
+
+              IN_PROGRES_SPIN();
 
               z_r += step_rot;
             }
@@ -536,5 +532,12 @@ void Calibrator::calibrationRefinement(
     x += step_transl;
   }
   average /= counter;
+
+  tVec.at<double>(X) = best_calibration.tX();
+  tVec.at<double>(Y) = best_calibration.tY();
+  tVec.at<double>(Z) = best_calibration.tZ();
+  rVec.at<double>(X) = best_calibration.rX();
+  rVec.at<double>(Y) = best_calibration.rY();
+  rVec.at<double>(Z) = best_calibration.rZ();
 }
 
