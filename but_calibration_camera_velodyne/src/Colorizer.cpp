@@ -35,9 +35,9 @@ using namespace std;
 using namespace cv;
 using namespace pcl;
 using namespace but::calibration_camera_velodyne;
-using namespace but::calibration_camera_velodyne::Velodyne;
+using namespace but::calibration_camera_velodyne::velodyne;
 
-void Colorizer::setImage(Mat& image) {
+void Colorizer::setImage(Mat &image) {
   this->image = image;
 }
 
@@ -45,19 +45,19 @@ void Colorizer::setCamera(Camera *camera) {
   this->camera = camera;
 }
 
-void Colorizer::setPointCloud(Velodyne::Velodyne pointCloud) { ;
+void Colorizer::setPointCloud(velodyne::Velodyne pointCloud) {
+  ;
   this->pointCloud = pointCloud.ros2ButCoordinateSystem();
   //this->pointCloud.view();
 }
 
 PointCloud<PointXYZRGB> Colorizer::colorize() {
 
-
   auto colorCloud = colourByFishEye();
 
   // reverse axix switching:
   Eigen::Affine3f transf = getTransformation(0, 0, 0, -M_PI / 2, 0, 0);
- // transformPointCloud(colorCloud, colorCloud, transf);
+  // transformPointCloud(colorCloud, colorCloud, transf);
 
   return colorCloud;
 }
@@ -79,11 +79,11 @@ PointCloud<PointXYZRGB> Colorizer::colourByFishEye() {
 
 
   cv::Rect frame(cv::Point(0, 0), color.size());
-  pointCloudTransform.normalizeIntensity(0,1);
+  pointCloudTransform.normalizeIntensity(0, 1);
   //pointCloudTransform.view(0, "pointCloudTransform");
   for (auto pt : pointCloudTransform) {
 
-    cv::Point xy = Velodyne::Velodyne::project(pt, camera->P);
+    cv::Point xy = velodyne::Velodyne::project(pt, camera->P);
     //cv::Point xy = camera->project(Point3f(pt.x, pt.y, pt.z));
 
     if (pt.z > 0 && xy.inside(frame)) {
@@ -98,8 +98,7 @@ PointCloud<PointXYZRGB> Colorizer::colourByFishEye() {
           pt.intensity < POINTCLOUD_EDGE_TRASH_HOLD ? 0_rgb_c : 255_rgb_c;
     }
   }
-  SHOW_IMAGE(color,"simlrarity");
-
+  SHOW_IMAGE(color, "simlrarity");
 
   cv::rotate(this->image, image, cv::ROTATE_90_CLOCKWISE);
 
@@ -109,21 +108,22 @@ PointCloud<PointXYZRGB> Colorizer::colourByFishEye() {
   auto pclPointCloud = this->pointCloud.getPointCloud();
 
   for (auto point:pointCloudTransform) {
-	  cvPointCloud.push_back(Point3d((double)point.x, (double)point.y, (double)point.z));
+    cvPointCloud.push_back(Point3d((double) point.x,
+                                   (double) point.y,
+                                   (double) point.z));
   }
 
   Mat zeroVec = VEC_3D;
 
-
   vector<Point2f> projectedPoints;
 
   fisheye::projectPoints(
-	  cvPointCloud,
-	  projectedPoints,
-	  zeroVec,
-	  zeroVec,
-	  camera->K,
-	  camera->D
+      cvPointCloud,
+      projectedPoints,
+      zeroVec,
+      zeroVec,
+      camera->K,
+      camera->D
   );
 
   cout << *camera << endl;
@@ -137,10 +137,11 @@ PointCloud<PointXYZRGB> Colorizer::colourByFishEye() {
     Point2f xy = projectedPoints[iter];
     Vec3b rgb;
 
-    if (pclPointCloud.at(iter).z < 0 || xy.y < 0 || xy.x < 0 || xy.y > image.rows || xy.x > image.cols) {
+    if (pclPointCloud.at(iter).z < 0 || xy.y < 0 || xy.x < 0
+        || xy.y > image.rows || xy.x > image.cols) {
       rgb = rgbDefault;
     } else {
-      rgb = Image::Image::atf(image, xy);
+      rgb = image::Image::atf(image, xy);
     }
 
     PointXYZRGB pt_rgb(rgb.val[RED], rgb.val[GREEN], rgb.val[BLUE]);

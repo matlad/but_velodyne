@@ -31,22 +31,22 @@ class Calibrator {
    *  Obraz, který byl převeden na odstíny šedi a byla
    *  na něm provedeno zvíraznění hran.
    */
-  Image::Image *edgeImage = nullptr;
+  image::Image *edgeImage = nullptr;
 
   /**
    * @brief Zpracovávaný point cloud
    */
-  Velodyne::Velodyne pointCloud;
+  velodyne::Velodyne pointCloud;
 
   /**
    * @brief pointCloud s intensity podle hran
    */
-  Velodyne::Velodyne edgePointCloud;
+  velodyne::Velodyne edgePointCloud;
 
   /**
    * @brief Vnitřní parametry kamery
    */
-   Camera * camera;
+  Camera *camera;
 
   /**
    * @brief Vzdálenost kruhů v
@@ -70,7 +70,7 @@ class Calibrator {
   /**
    *  Nastaví pointcloud ke zpracování
    */
-  void setPointCloud(Velodyne::VPointCloud cloud);
+  void setPointCloud(velodyne::oldVPointCloud cloud);
 
   /**
    * @brief nastaví parametry kamery
@@ -92,12 +92,14 @@ class Calibrator {
    * @param radius3D  rádius kruhů v poitCloudu
    * @return
    */
-  void findTranslation(std::vector<cv::Point2f> image,
-                       std::vector<cv::Point3f> velodyne,
-                       double radius2D,
-                       double radius3D,
-                       cv::Mat rVec,
-                       cv::Mat tVec);
+  void findTranslation(
+      std::vector<cv::Point2f> image,
+      std::vector<cv::Point3f> velodyne,
+      double radius2D,
+      double radius3D,
+      cv::Mat rVec,
+      cv::Mat tVec
+  );
 
   /**
    * @brief Doladění externách parametrů
@@ -105,13 +107,15 @@ class Calibrator {
    * v každém kroku je vypočítaná krosreference hran v obraze a pointCloudu (@see Similarity::edgeSimilarity)
    * a hledá se, která poloha má tuto hodnotu nejvyšší;
    */
-  void calibrationRefinement(cv::Mat tVec,
-                             cv::Mat rVec,
-                             float max_translation,
-                             float max_rotation,
-                             unsigned steps,
-                             Calibration6DoF &best_calibration,
-                             Calibration6DoF &average);
+  void calibrationRefinement(
+      cv::Mat tVec,
+      cv::Mat rVec,
+      float max_translation,
+      float max_rotation,
+      unsigned steps,
+      Calibration6DoF &best_calibration,
+      Calibration6DoF &average
+  );
 
   Calibration6DoF calibration(bool doRefinement);
 
@@ -126,13 +130,17 @@ class Calibrator {
  * @param y_r
  * @param z_r
  */
-  double getSimilarity(cv::Mat &tvec, cv::Mat &rvec, const char * title = "getSimilarity");
+  double getSimilarity(
+      cv::Mat &tvec,
+      cv::Mat &rvec,
+      const char *title = "getSimilarity"
+  );
 
   virtual ~Calibrator();
 
   double getSimilarity2(cv::Mat &tvec, cv::Mat &rvec, const char *title);
 
-  Velodyne::Velodyne rawPCl;
+  velodyne::Velodyne rawPCl;
 
   cv::Mat rawImg;
 };

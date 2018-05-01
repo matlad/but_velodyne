@@ -36,52 +36,54 @@
 using namespace but::calibration_camera_velodyne;
 using std::string;
 
+int main(int argc, char **argv) {
+  ros::init(argc, argv, "coloring_node");
 
-int main(int argc, char **argv)
-{
-	ros::init(argc, argv, "coloring_node");
+  string CAMERA_FRAME_TOPIC;
+  string CAMERA_INFO_TOPIC;
+  string VELODYNE_TOPIC;
+  string VELODYNE_COLOR_TOPIC;
+  std::vector<double> sixDoF;
 
-	string CAMERA_FRAME_TOPIC;
-	string CAMERA_INFO_TOPIC;
-	string VELODYNE_TOPIC;
-	string VELODYNE_COLOR_TOPIC;
-	std::vector<float> sixDoF;
+  ros::NodeHandle n;
+  n.getParam("/but_calibration_camera_velodyne/camera_frame_topic",
+             CAMERA_FRAME_TOPIC);
+  n.getParam("/but_calibration_camera_velodyne/camera_info_topic",
+             CAMERA_INFO_TOPIC);
+  n.getParam("/but_calibration_camera_velodyne/velodyne_topic", VELODYNE_TOPIC);
+  n.getParam("/but_calibration_camera_velodyne/velodyne_color_topic",
+             VELODYNE_COLOR_TOPIC);
+  n.getParam("/but_calibration_camera_velodyne/6DoF", sixDoF);
 
-	ros::NodeHandle n;
-	n.getParam("/but_calibration_camera_velodyne/camera_frame_topic", CAMERA_FRAME_TOPIC);
-	n.getParam("/but_calibration_camera_velodyne/camera_info_topic", CAMERA_INFO_TOPIC);
-	n.getParam("/but_calibration_camera_velodyne/velodyne_topic", VELODYNE_TOPIC);
-	n.getParam("/but_calibration_camera_velodyne/velodyne_color_topic", VELODYNE_COLOR_TOPIC);
-	n.getParam("/but_calibration_camera_velodyne/6DoF", sixDoF);
+  ros::Publisher
+      pub = n.advertise<sensor_msgs::PointCloud2>(VELODYNE_COLOR_TOPIC, 1);
 
-	ros::Publisher pub = n.advertise<sensor_msgs::PointCloud2>(VELODYNE_COLOR_TOPIC, 1);
+  auto rosColoringWrapper = RosColoringWrapper(pub, sixDoF);
 
-	auto rosColoringWrapper = RosColoringWrapper(pub, sixDoF);
+  // Subscribe input camera image
+  image_transport::ImageTransport it(n);
+  image_transport::Subscriber sub = it.subscribe(
+      CAMERA_FRAME_TOPIC,
+      10,
+      &RosColoringWrapper::imageFrameCallback,
+      &rosColoringWrapper
+  );
 
-	// Subscribe input camera image
-	image_transport::ImageTransport it(n);
-	image_transport::Subscriber     sub = it.subscribe(
-			CAMERA_FRAME_TOPIC,
-			10,
-			&RosColoringWrapper::imageFrameCallback,
-			&rosColoringWrapper
-	);
+  ros::Subscriber info_sub = n.subscribe(
+      CAMERA_INFO_TOPIC,
+      10,
+      &RosColoringWrapper::cameraInfoCallback,
+      &rosColoringWrapper
+  );
 
-	ros::Subscriber info_sub = n.subscribe(
-			CAMERA_INFO_TOPIC,
-			10,
-			&RosColoringWrapper::cameraInfoCallback,
-			&rosColoringWrapper
-	);
+  ros::Subscriber pc_sub = n.subscribe<sensor_msgs::PointCloud2>(
+      VELODYNE_TOPIC,
+      1,
+      &RosColoringWrapper::pointCloudCallback,
+      &rosColoringWrapper
+  );
 
-	ros::Subscriber pc_sub = n.subscribe<sensor_msgs::PointCloud2>(
-			VELODYNE_TOPIC,
-			1,
-			&RosColoringWrapper::pointCloudCallback,
-			&rosColoringWrapper
-	);
+  ros::spin();
 
-	ros::spin();
-
-	return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }

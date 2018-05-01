@@ -15,7 +15,6 @@ namespace but::calibration_camera_velodyne {
  */
 unsigned char operator "" _rgb_c(unsigned long long in);
 
-
 }
 
 #endif //BUT_CALIBRATION_CAMERA_VELODYNE_TYPES_H

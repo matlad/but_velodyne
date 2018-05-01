@@ -18,16 +18,16 @@ using cv::Mat;
 using cv::imread;
 using pcl::io::loadPCDFile;
 using but::calibration_camera_velodyne::Colorizer;
-using but::calibration_camera_velodyne::Velodyne::VPointCloud;
-using but::calibration_camera_velodyne::Velodyne::Velodyne;
+using but::calibration_camera_velodyne::velodyne::oldVPointCloud;
+using but::calibration_camera_velodyne::velodyne::Velodyne;
 using but::calibration_camera_velodyne::FishEyeCamera;
 using std::cerr;
 using std::endl;
 
 int error(const char *msg) {
   cerr << msg << "\n"
-	   << " <frame> <camera-parameters> <point-cloud>"
-	   << endl;
+       << " <frame> <camera-parameters> <point-cloud>"
+       << endl;
 
   return EXIT_FAILURE;
 }
@@ -46,8 +46,8 @@ int main(int argc, char *argv[]) {
   FishEyeCamera camera;
 
   cv::FileStorage fs_P(argv[2], cv::FileStorage::READ);
-  if (!fs_P.isOpened()){
-      return error("Chyba při otevření souboru s parametry kamery");
+  if (!fs_P.isOpened()) {
+    return error("Chyba při otevření souboru s parametry kamery");
   }
   fs_P["P"] >> camera.P;
   fs_P["D"] >> camera.D;
@@ -63,10 +63,10 @@ int main(int argc, char *argv[]) {
        << "rvec:" << camera.rvec << "\n"
        << endl;
 
-  VPointCloud pointCloud;
+  oldVPointCloud pointCloud;
   pcl::io::loadPCDFile(argv[3], pointCloud);
   if (pointCloud.empty()) {
-	return error("Chyba při načítání pointCloud");
+    return error("Chyba při načítání pointCloud");
   }
 
   Colorizer colorizer;

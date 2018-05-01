@@ -11,15 +11,12 @@
 #include <stdexcept>
 #include <string>
 
-namespace but::calibration_camera_velodyne
-{
+namespace but::calibration_camera_velodyne {
 
-class NotImplementedException : public std::runtime_error
-{
-public:
+class NotImplementedException : public std::runtime_error {
+ public:
   NotImplementedException(std::string what) :
-      std::runtime_error("Not Implemented: " + what + ".")
-  {
+      std::runtime_error("Not Implemented: " + what + ".") {
   }
 };
 

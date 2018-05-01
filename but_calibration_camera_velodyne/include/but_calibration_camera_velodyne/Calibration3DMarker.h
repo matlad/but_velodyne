@@ -26,70 +26,102 @@
 #include <but_calibration_camera_velodyne/Velodyne.h>
 #include <but_calibration_camera_velodyne/Image.h>
 
+namespace but::calibration_camera_velodyne {
 
-namespace but::calibration_camera_velodyne
-{
+class Calibration3DMarker {
 
-class Calibration3DMarker
-{
+ public:
+  Calibration3DMarker(
+      cv::Mat _frame_gray,
+      cv::Mat _P,
+      ::pcl::PointCloud<velodyne::Point> _pc,
+      double _circ_distance,
+      double _radius
+  );
 
-public:
-  Calibration3DMarker(cv::Mat _frame_gray, cv::Mat _P, ::pcl::PointCloud<Velodyne::Point> _pc, double _circ_distance,
-                      double _radius);
+  bool detectCirclesInImage(
+      std::vector<cv::Point2f> &centers,
+      std::vector<double> &radiuses
+  );
 
-  bool detectCirclesInImage(std::vector<cv::Point2f> &centers, std::vector<double> &radiuses);
+  bool detectCirclesInPointCloud(
+      std::vector<cv::Point3f> &centers,
+      std::vector<double> &radiuses
+  );
 
-  bool detectCirclesInPointCloud(std::vector<cv::Point3f> &centers, std::vector<double> &radiuses);
-
-protected:
+ protected:
   template<typename PointT>
-    void remove_inliers(const ::pcl::PointCloud<PointT> &cloud_in, std::vector<int> inliers_indices,
-                        ::pcl::PointCloud<PointT> &cloud_out)
-    {
+  void remove_inliers(
+      const ::pcl::PointCloud<PointT> &cloud_in,
+      std::vector<int> inliers_indices,
+      ::pcl::PointCloud<PointT> &cloud_out
+  ) {
 
-      std::vector<int> outliers_indicies;
-      for (int i = 0; i < cloud_in.size(); i++)
-      {
-        if (find(inliers_indices.begin(), inliers_indices.end(), i) == inliers_indices.end())
-        {
-          outliers_indicies.push_back(i);
-        }
+    std::vector<int> outliers_indicies;
+    for (int i = 0; i < cloud_in.size(); i++) {
+      if (find(inliers_indices.begin(), inliers_indices.end(), i)
+          == inliers_indices.end()) {
+        outliers_indicies.push_back(i);
       }
-      ::pcl::copyPointCloud< ::pcl::PointXYZ >(cloud_in, outliers_indicies, cloud_out);
     }
+    ::pcl::copyPointCloud<::pcl::PointXYZ>(
+        cloud_in,
+        outliers_indicies,
+        cloud_out
+    );
+  }
 
-  std::vector< ::pcl::PointXYZ > detect4spheres(::pcl::PointCloud< ::pcl::PointXYZ >::Ptr plane, std::vector<double> &radiuses);
+  std::vector<::pcl::PointXYZ> detect4spheres(
+      ::pcl::PointCloud<::pcl::PointXYZ>::Ptr plane,
+      std::vector<double> &radiuses
+  );
   /*
    * Indexes of circles in marker:
    * 0 1
    * 2 3
    */
-  void order4spheres(std::vector< ::pcl::PointXYZ > &spheres_centers);
+  void order4spheres(std::vector<::pcl::PointXYZ> &spheres_centers);
 
-  bool verify4spheres(const std::vector< ::pcl::PointXYZ > &spheres_centers, double straight_distance, double delta);
+  bool verify4spheres(
+      const std::vector<::pcl::PointXYZ> &spheres_centers,
+      double straight_distance,
+      double delta
+  );
   /*
    * All points around the all found centers:
    * x x x
    * x   x
    * x x x
    */
-  std::vector< ::pcl::PointXYZ > generate_possible_centers(const std::vector< ::pcl::PointXYZ > &spheres_centers,
-                                                       double straight_distance);
+  std::vector<::pcl::PointXYZ> generate_possible_centers(
+      const std::vector<::pcl::PointXYZ> &spheres_centers,
+      double straight_distance
+  );
 
-  void generate_possible_points(::pcl::PointCloud< ::pcl::PointXYZ > &plane,
-                                ::pcl::PointCloud< ::pcl::PointXYZ >::Ptr detection_cloud,
-                                const std::vector< ::pcl::PointXYZ > &possible_centers, double radius, double tolerance);
+  void generate_possible_points(
+      ::pcl::PointCloud<::pcl::PointXYZ> &plane,
+      ::pcl::PointCloud<::pcl::PointXYZ>::Ptr detection_cloud,
+      const std::vector<::pcl::PointXYZ> &possible_centers,
+      double radius,
+      double tolerance
+  );
 
-  std::vector< ::pcl::PointXYZ > refine4centers(std::vector< ::pcl::PointXYZ > centers,
-                                            ::pcl::PointCloud< ::pcl::PointXYZ >::Ptr detection_cloud);
+  std::vector<::pcl::PointXYZ> refine4centers(
+      std::vector<::pcl::PointXYZ> centers,
+      ::pcl::PointCloud<::pcl::PointXYZ>::Ptr detection_cloud
+  );
 
-protected:
+ protected:
   cv::Mat frame_gray, P;
-  ::pcl::PointCloud<Velodyne::Point> pc;
+
+  ::pcl::PointCloud<velodyne::Point> pc;
+
   double circ_distance, radius;
-  ::pcl::PointCloud< ::pcl::PointXYZ > plane;
+
+  ::pcl::PointCloud<::pcl::PointXYZ> plane;
 
   static const int CANNY_THRESH = 150;
+
   static const int CENTER_THRESH_DISTANCE = 80;
 };
 

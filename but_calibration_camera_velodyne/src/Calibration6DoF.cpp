@@ -38,8 +38,8 @@ void Calibration6DoF::set(cv::Mat tvec, cv::Mat rvec, double val) {
   ASSERT_IS_VEC_3D(rvec);
 
   set(
-	  tvec.at<double>(X), tvec.at<double>(Y), tvec.at<double>(Z),
-	  rvec.at<double>(X), rvec.at<double>(Y), rvec.at<double>(Z),
-	  val
+      tvec.at<double>(X), tvec.at<double>(Y), tvec.at<double>(Z),
+      rvec.at<double>(X), rvec.at<double>(Y), rvec.at<double>(Z),
+      val
   );
 }

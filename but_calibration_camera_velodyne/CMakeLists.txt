@@ -2,25 +2,25 @@ cmake_minimum_required(VERSION 2.8.3)
 project(but_calibration_camera_velodyne)
 set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS} -g")
 
-find_package(catkin 
-  REQUIRED COMPONENTS
-  std_msgs
-  rospy  
-  roscpp
-  cv_bridge
-  image_transport
-  image_geometry
-  pcl_ros
-  velodyne_pointcloud
-  roslint
-)
+find_package(catkin
+             REQUIRED COMPONENTS
+             std_msgs
+             rospy
+             roscpp
+             cv_bridge
+             image_transport
+             image_geometry
+             pcl_ros
+             velodyne_pointcloud
+             roslint
+             )
 
-catkin_package(CATKIN_DEPENDS std_msgs )
+catkin_package(CATKIN_DEPENDS std_msgs)
 
-find_package( OpenCV REQUIRED )
-include_directories( ${OpenCV_INCLUDE_DIRS})
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
 
-find_package(PCL 1.7 REQUIRED) 
+find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
@@ -83,42 +83,50 @@ add_executable(calibration
                src/Colorizer.cpp #todo remove
                include/but_calibration_camera_velodyne/Colorizer.h #todo remove
                )
-target_link_libraries(calibration ${PCL_LIBRARIES}) 
+target_link_libraries(calibration ${PCL_LIBRARIES})
 target_link_libraries(calibration ${catkin_LIBRARIES})
 
 add_executable(coloring
-        src/coloring-node.cpp
-        include/but_calibration_camera_velodyne/macros.h
-        include/but_calibration_camera_velodyne/Constants.h
+               src/coloring-node.cpp
+               include/but_calibration_camera_velodyne/macros.h
+               include/but_calibration_camera_velodyne/Constants.h
 
-        src/Image.cpp
-        include/but_calibration_camera_velodyne/Image.h
-        src/Velodyne.cpp
-        include/but_calibration_camera_velodyne/Velodyne.h
-        src/Colorizer.cpp
-        include/but_calibration_camera_velodyne/Colorizer.h
-        src/FishEyeCamera.cpp
-        include/but_calibration_camera_velodyne/FishEyeCamera.h
-        src/RosColoringWrapper.cpp
-        include/but_calibration_camera_velodyne/RosColoringWrapper.h
-        )
-target_link_libraries(coloring ${PCL_LIBRARIES}) 
+               src/Image.cpp
+               include/but_calibration_camera_velodyne/Image.h
+               src/Velodyne.cpp
+               include/but_calibration_camera_velodyne/Velodyne.h
+               src/Colorizer.cpp
+               include/but_calibration_camera_velodyne/Colorizer.h
+               src/FishEyeCamera.cpp
+               include/but_calibration_camera_velodyne/FishEyeCamera.h
+               src/RosColoringWrapper.cpp
+               include/but_calibration_camera_velodyne/RosColoringWrapper.h
+               src/types.cpp
+               include/but_calibration_camera_velodyne/types.h
+               src/Camera.cpp
+               include/but_calibration_camera_velodyne/Camera.h
+               )
+target_link_libraries(coloring ${PCL_LIBRARIES})
 target_link_libraries(coloring ${catkin_LIBRARIES})
 
 add_executable(coloringNonRos
-        src/coloring.cpp
-        include/but_calibration_camera_velodyne/macros.h
-        include/but_calibration_camera_velodyne/Constants.h
+               src/coloring.cpp
+               include/but_calibration_camera_velodyne/macros.h
+               include/but_calibration_camera_velodyne/Constants.h
 
-        src/Image.cpp
-        include/but_calibration_camera_velodyne/Image.h
-        src/Velodyne.cpp
-        include/but_calibration_camera_velodyne/Velodyne.h
-        src/Colorizer.cpp
-        include/but_calibration_camera_velodyne/Colorizer.h
-        src/FishEyeCamera.cpp
-        include/but_calibration_camera_velodyne/FishEyeCamera.h
-        )
+               src/Image.cpp
+               include/but_calibration_camera_velodyne/Image.h
+               src/Velodyne.cpp
+               include/but_calibration_camera_velodyne/Velodyne.h
+               src/Colorizer.cpp
+               include/but_calibration_camera_velodyne/Colorizer.h
+               src/FishEyeCamera.cpp
+               include/but_calibration_camera_velodyne/FishEyeCamera.h
+               src/types.cpp
+               include/but_calibration_camera_velodyne/types.h
+               src/Camera.cpp
+               include/but_calibration_camera_velodyne/Camera.h
+               )
 target_link_libraries(coloringNonRos ${PCL_LIBRARIES})
 target_link_libraries(coloringNonRos ${catkin_LIBRARIES})
 

@@ -24,7 +24,7 @@ using cv::Mat;
 using cv::imread;
 using pcl::io::loadPCDFile;
 using but::calibration_camera_velodyne::Calibrator;
-using but::calibration_camera_velodyne::Velodyne::VPointCloud;
+using but::calibration_camera_velodyne::velodyne::oldVPointCloud;
 using but::calibration_camera_velodyne::FishEyeCamera;
 using but::calibration_camera_velodyne::Calibration6DoF;
 using std::clog;
@@ -47,12 +47,12 @@ int error(const char *msg) {
 int main(int argc, char *argv[]) {
 
   if (argc != 6) {
-	return error("Chybný počet argumentů");
+    return error("Chybný počet argumentů");
   }
 
   Mat image = imread(argv[ARG_FRAME]);
   if (image.empty()) {
-	return error("Chyba při načítání obrázku");
+    return error("Chyba při načítání obrázku");
   }
 
   FishEyeCamera camera;
@@ -63,16 +63,15 @@ int main(int argc, char *argv[]) {
   fs_P["K"] >> camera.K;
   fs_P.release();
 
-
   camera.tvec = VEC_3D;
   camera.rvec = VEC_3D;
 
   clog << camera << endl;
 
-  VPointCloud pointCloud;
+  oldVPointCloud pointCloud;
   pcl::io::loadPCDFile(argv[ARG_POINT_CLOUD], pointCloud);
   if (pointCloud.empty()) {
-	return error("Chyba při načítání pointCloud");
+    return error("Chyba při načítání pointCloud");
   }
 
   auto circleDistance = strtod(argv[ARG_CIRCLES_DISTANCE], nullptr);

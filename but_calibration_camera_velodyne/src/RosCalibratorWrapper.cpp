@@ -20,7 +20,6 @@
 
 #define BREAK 0
 
-
 using pcl::PointCloud;
 using pcl::fromROSMsg;
 using cv::RotateFlags::ROTATE_90_COUNTERCLOCKWISE;
@@ -28,14 +27,16 @@ using namespace but::calibration_camera_velodyne;
 using ros::shutdown;
 
 void RosCalibratorWrapper::callback(
-	const sensor_msgs::ImageConstPtr &msg_img,
-	const sensor_msgs::CameraInfoConstPtr &msg_info,
-	const sensor_msgs::PointCloud2ConstPtr &msg_pc
+    const sensor_msgs::ImageConstPtr &msg_img,
+    const sensor_msgs::CameraInfoConstPtr &msg_info,
+    const sensor_msgs::PointCloud2ConstPtr &msg_pc
 ) {
 
   ROS_DEBUG_STREAM("Image received at " << msg_img->header.stamp.toSec());
-  ROS_DEBUG_STREAM("Camera info received at " << msg_info->header.stamp.toSec());
-  ROS_DEBUG_STREAM("Velodyne scan received at " << msg_pc->header.stamp.toSec());
+  ROS_DEBUG_STREAM(
+      "Camera info received at " << msg_info->header.stamp.toSec());
+  ROS_DEBUG_STREAM(
+      "Velodyne scan received at " << msg_pc->header.stamp.toSec());
 
   processImageInfo(msg_info);
   processImage(msg_img);
@@ -44,12 +45,14 @@ void RosCalibratorWrapper::callback(
   // calibration:
   Calibration6DoF calibrationParams = calibrator.calibration(true);
   if (calibrationParams.isGood()) {
-	ROS_INFO_STREAM("Calibration succeeded, found parameters:");
-	calibrationParams.print();
-	shutdown();
+    ROS_INFO_STREAM("Calibration succeeded, found parameters:");
+    calibrationParams.print();
+    shutdown();
   } else {
-	ROS_WARN("Calibration failed - trying again after " BUT_STR(BREAK) "s ...");
-	ros::Duration(BREAK).sleep();
+    ROS_WARN("Calibration failed - trying again after "
+                 BUT_STR(BREAK)
+                 "s ...");
+    ros::Duration(BREAK).sleep();
   }
 }
 
@@ -69,20 +72,20 @@ void RosCalibratorWrapper::processImageInfo(const sensor_msgs::CameraInfoConstPt
 }
 
 void RosCalibratorWrapper::processImage(const sensor_msgs::ImageConstPtr &image) {
-  boost::shared_ptr<cv_bridge::CvImage> cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
+  boost::shared_ptr<cv_bridge::CvImage>
+      cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
   calibrator.setImage(cv_ptr->image);
 }
 
 void RosCalibratorWrapper::processPointCloud(const sensor_msgs::PointCloud2ConstPtr &pointCloud) {
   // Loading Velodyne point cloud
-  PointCloud <Velodyne::Point> pc;
+  PointCloud<velodyne::Point> pc;
   fromROSMsg(*pointCloud, pc);
   calibrator.setPointCloud(pc);
 }
 
-RosCalibratorWrapper::RosCalibratorWrapper(double distance, double radius):
-	calibrator(distance,radius)
-{}
+RosCalibratorWrapper::RosCalibratorWrapper(double distance, double radius) :
+    calibrator(distance, radius) {}
 
 
 

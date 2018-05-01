@@ -20,7 +20,7 @@
 
 namespace but::calibration_camera_velodyne {
 
-namespace Velodyne {
+namespace velodyne {
 
 typedef enum {
   DISTORTIONS, INTENSITY_EDGES, NONE, Z_DISTORTIONS
@@ -36,17 +36,24 @@ struct Point {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW // ensure proper alignment
 }EIGEN_ALIGN16;
 
-typedef ::pcl::PointCloud<Point> VPointCloud;
+typedef ::pcl::PointCloud<Point> oldVPointCloud;
 
 class Velodyne {
  public:
   Velodyne() {
   }
 
-  Velodyne(VPointCloud point_cloud);
+  Velodyne(oldVPointCloud point_cloud);
   Velodyne(const Velodyne &orig);
 
-  Velodyne transform(float x, float y, float z, float rot_x, float rot_y, float rot_z);
+  Velodyne transform(
+      float x,
+      float y,
+      float z,
+      float rot_x,
+      float rot_y,
+      float rot_z
+  );
 
   Velodyne transform(std::vector<float> DoF);
 
@@ -59,32 +66,35 @@ class Velodyne {
 
   static cv::Point2f
   projectf(const Point &pt, const cv::Mat &projection_matrix) {
-	cv::Mat pt_3D(4, 1, CV_32FC1);
+    cv::Mat pt_3D(4, 1, CV_32FC1);
 
-	pt_3D.at<float>(0) = pt.x;
-	pt_3D.at<float>(1) = pt.y;
-	pt_3D.at<float>(2) = pt.z;
-	pt_3D.at<float>(3) = 1.0f; // is homogenious coords. the point's 4. coord is 1
+    pt_3D.at<float>(0) = pt.x;
+    pt_3D.at<float>(1) = pt.y;
+    pt_3D.at<float>(2) = pt.z;
+    pt_3D.at<float>(3) =
+        1.0f; // is homogenious coords. the point's 4. coord is 1
 
-	cv::Mat pt_2D = projection_matrix * pt_3D;
+    cv::Mat pt_2D = projection_matrix * pt_3D;
 
-	float w = pt_2D.at<float>(2);
-	float x = pt_2D.at<float>(0) / w;
-	float y = pt_2D.at<float>(1) / w;
+    float w = pt_2D.at<float>(2);
+    float x = pt_2D.at<float>(0) / w;
+    float y = pt_2D.at<float>(1) / w;
 
-	return cv::Point2f(x, y);
+    return cv::Point2f(x, y);
   }
 
   static cv::Point
   project(const Point &pt, const cv::Mat &projection_matrix) {
 
-	cv::Point2f xy = projectf(pt, projection_matrix);
-	return cv::Point(xy.x, xy.y);
+    cv::Point2f xy = projectf(pt, projection_matrix);
+    return cv::Point(xy.x, xy.y);
   }
 
-  cv::Mat project(cv::Mat projection_matrix,
-				  cv::Rect frame,
-				  ::pcl::PointCloud<Point> *visible_points = NULL);
+  cv::Mat project(
+      cv::Mat projection_matrix,
+      cv::Rect frame,
+      ::pcl::PointCloud<Point> *visible_points = NULL
+  );
 
   cv::Mat
   project(cv::Mat projection_matrix, cv::Rect frame, cv::Mat plane);
@@ -98,118 +108,133 @@ class Velodyne {
   std::vector<Velodyne> depthSegmentation(int segments);
 
   bool isEmpty() {
-	return point_cloud.empty();
+    return point_cloud.empty();
   }
 
   size_t size() {
-	return point_cloud.size();
+    return point_cloud.size();
   }
 
   bool empty() {
-	return point_cloud.empty();
+    return point_cloud.empty();
   }
 
   void push_back(Point pt) {
-	point_cloud.push_back(pt);
+    point_cloud.push_back(pt);
   }
 
   void save(std::string filename) {
-	::pcl::io::savePCDFile(filename, point_cloud);
+    ::pcl::io::savePCDFile(filename, point_cloud);
   }
 
   ::pcl::PointCloud<Point>::iterator begin() {
-	return point_cloud.begin();
+    return point_cloud.begin();
   }
 
   ::pcl::PointCloud<Point>::iterator end() {
-	return point_cloud.end();
+    return point_cloud.end();
   }
 
   ::pcl::PointCloud<Point> getPointCloud() {
-	return point_cloud;
+    return point_cloud;
   }
 
-  static void view(::pcl::PointCloud<::pcl::PointXYZ>::Ptr cloud_ptr,
-				   const char *windowName = "3D Viewer") {
-	boost::shared_ptr<::pcl::visualization::PCLVisualizer> viewer(
-		new ::pcl::visualization::PCLVisualizer(windowName));
+  static void view(
+      ::pcl::PointCloud<::pcl::PointXYZ>::Ptr cloud_ptr,
+      const char *windowName = "3D Viewer"
+  ) {
+    boost::shared_ptr<::pcl::visualization::PCLVisualizer> viewer(
+        new ::pcl::visualization::PCLVisualizer(windowName));
 
-	viewer->setBackgroundColor(0, 0, 0);
-	viewer->addPointCloud<::pcl::PointXYZ>(cloud_ptr,
-										   "sample cloud");
-	viewer->setPointCloudRenderingProperties(::pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
-											 3,
-											 "sample cloud");
-	viewer->addCoordinateSystem(0.3);
-	viewer->initCameraParameters();
-	while (!viewer->wasStopped()) {
-	  viewer->spinOnce(100);
-	  boost::this_thread::sleep(boost::posix_time::microseconds(
-		  100000));
-	}
+    viewer->setBackgroundColor(0, 0, 0);
+    viewer->addPointCloud<::pcl::PointXYZ>(cloud_ptr,
+                                           "sample cloud");
+    viewer->setPointCloudRenderingProperties(::pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
+                                             3,
+                                             "sample cloud");
+    viewer->addCoordinateSystem(0.3);
+    viewer->initCameraParameters();
+    while (!viewer->wasStopped()) {
+      viewer->spinOnce(100);
+      boost::this_thread::sleep(boost::posix_time::microseconds(
+          100000));
+    }
 
-	//viewer->close();
+    //viewer->close();
 
   }
 
   static void view(::pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_ptr) {
-	boost::shared_ptr<::pcl::visualization::PCLVisualizer> viewer(
-		new ::pcl::visualization::PCLVisualizer(
-			"Color 3D Viewer"));
+    boost::shared_ptr<::pcl::visualization::PCLVisualizer> viewer(
+        new ::pcl::visualization::PCLVisualizer(
+            "Color 3D Viewer"));
 
-	viewer->setBackgroundColor(0, 0, 0);
-	::pcl::visualization::PointCloudColorHandlerRGBField<::pcl::PointXYZRGB>
-		rgb(
-		cloud_ptr);
+    viewer->setBackgroundColor(0, 0, 0);
+    ::pcl::visualization::PointCloudColorHandlerRGBField<::pcl::PointXYZRGB>
+        rgb(cloud_ptr);
 
-	viewer->addPointCloud<::pcl::PointXYZRGB>(cloud_ptr,
-											  rgb,
-											  "sample cloud");
-	viewer->setPointCloudRenderingProperties(::pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
-											 3,
-											 "sample cloud");
-	viewer->addCoordinateSystem(0.3);
-	viewer->initCameraParameters();
-	while (!viewer->wasStopped()) {
-	  viewer->spinOnce(100);
-	  boost::this_thread::sleep(boost::posix_time::microseconds(
-		  100000));
-	}
+    viewer->addPointCloud<::pcl::PointXYZRGB>(
+        cloud_ptr,
+        rgb,
+        "sample cloud"
+    );
+
+    viewer->setPointCloudRenderingProperties(
+        ::pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
+        3,
+        "sample cloud"
+    );
+
+    viewer->addCoordinateSystem(0.3);
+    viewer->initCameraParameters();
+    while (!viewer->wasStopped()) {
+      viewer->spinOnce(100);
+      boost::this_thread::sleep(boost::posix_time::microseconds(
+          100000));
+    }
   }
 
-  static void view(::pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloudPtr, const char *windowTitle) {
+  static void view(
+      ::pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloudPtr,
+      const char *windowTitle
+  ) {
 
-	boost::shared_ptr<::pcl::visualization::PCLVisualizer> viewer(
-		new ::pcl::visualization::PCLVisualizer(windowTitle)
-	);
+    boost::shared_ptr<::pcl::visualization::PCLVisualizer> viewer(
+        new ::pcl::visualization::PCLVisualizer(windowTitle)
+    );
 
-	viewer->setBackgroundColor(0, 0, 0);
-	::pcl::visualization::PointCloudColorHandlerRGBField<::pcl::PointXYZRGB> rgb(pointCloudPtr);
+    viewer->setBackgroundColor(0, 0, 0);
+    ::pcl::visualization::PointCloudColorHandlerRGBField<::pcl::PointXYZRGB>
+        rgb(pointCloudPtr);
 
-	viewer->addPointCloud<::pcl::PointXYZRGB>(pointCloudPtr, rgb, "sample cloud");
-	viewer->setPointCloudRenderingProperties(::pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");
-	viewer->addCoordinateSystem(0.3);
-	viewer->initCameraParameters();
-	while (!viewer->wasStopped()) {
-	  viewer->spinOnce(100);
-	  boost::this_thread::sleep(boost::posix_time::microseconds(
-		  100000));
-	}
+    viewer->addPointCloud<::pcl::PointXYZRGB>(pointCloudPtr,
+                                              rgb,
+                                              "sample cloud");
+    viewer->setPointCloudRenderingProperties(::pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
+                                             3,
+                                             "sample cloud");
+    viewer->addCoordinateSystem(0.3);
+    viewer->initCameraParameters();
+    while (!viewer->wasStopped()) {
+      viewer->spinOnce(100);
+      boost::this_thread::sleep(boost::posix_time::microseconds(
+          100000));
+    }
   }
 
   void view(float trashhold = 0, const char *windowTitle = "3D view");
 
   ::pcl::PointCloud<pcl::PointXYZRGB> colour(
-	  cv::Mat frame_rgb,
-	  cv::Mat P
+      cv::Mat frame_rgb,
+      cv::Mat P
   );
 
   ::pcl::PointCloud<pcl::PointXYZRGB> colourByFishEye(
-	  cv::Mat frame_rgb,
-	  cv::Mat D,
-	  cv::Mat K,
-	  cv::Mat rvec,
-	  cv::Mat tvec
+      cv::Mat frame_rgb,
+      cv::Mat D,
+      cv::Mat K,
+      cv::Mat rvec,
+      cv::Mat tvec
   );
 
   void detectPlanes(cv::Mat projection);
@@ -219,12 +244,16 @@ class Velodyne {
   void normalizeIntensity(float min = 0.0, float max = 1.0);
 
   ::pcl::PointCloud<pcl::PointXYZ> *toPointsXYZ();
-  pcl::PointCloud<pcl::PointXYZRGB> * toPointsXYZRGB();
+  pcl::PointCloud<pcl::PointXYZRGB> *toPointsXYZRGB();
 
   static const unsigned RINGS_COUNT = 32;
 
   std::vector<std::vector<Point *> > getRings();
-  void viewMarker(std::vector<cv::Point3f> centers,std::vector<float>radiuses ,const char *windowTitle);
+  void viewMarker(
+      std::vector<cv::Point3f> centers,
+      std::vector<float> radiuses,
+      const char *windowTitle
+  );
 
   /**
    * Převede z velodyne souřadnicového systému (X-doprava, Y-dopředu, Z-nahoru)
@@ -238,8 +267,8 @@ class Velodyne {
    */
   Velodyne but2RosCoordinateSystem();
 
-	void convolution();
-	void intensityByRangeDiff2();
+  void convolution();
+  void intensityByRangeDiff2();
 
  protected:
   ::pcl::PointCloud<Point> point_cloud;
@@ -251,10 +280,10 @@ class Velodyne {
 } /* NAMESPACE but_calibration_camera_velodyne */
 
 POINT_CLOUD_REGISTER_POINT_STRUCT(
-	but::calibration_camera_velodyne::Velodyne::Point,
-	(float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)(
-		uint16_t,
-		ring,
-		ring))
+    but::calibration_camera_velodyne::velodyne::Point,
+    (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)(
+        uint16_t,
+        ring,
+        ring))
 
 #endif /* VELODYNE_H_ */

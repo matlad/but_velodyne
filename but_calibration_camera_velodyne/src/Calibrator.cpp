@@ -21,15 +21,14 @@
 #include <but_calibration_camera_velodyne/macros.h>
 #include <opencv2/core/types.hpp>
 
-
 #define INPUT_STORACE "/media/Linux_Data/Code/school/FIT_BAK_COLOR_LINDAR/src/but_velodyne/but_calibration_camera_velodyne/data/"
 
 using namespace but::calibration_camera_velodyne;
 using cv::Mat;
 using std::vector;
-using ::but::calibration_camera_velodyne::Velodyne::Velodyne;
-using ::but::calibration_camera_velodyne::Image::Image;
-using Velodyne::Processing;
+using ::but::calibration_camera_velodyne::velodyne::Velodyne;
+using ::but::calibration_camera_velodyne::image::Image;
+using velodyne::Processing;
 using cv::Point2f;
 using cv::Point3f;
 using cv::Point3d;
@@ -46,19 +45,21 @@ void Calibrator::setImage(Mat image) {
   // SHOW_IMAGE(this->image,"Input image")
   Mat frame_gray;
   cvtColor(this->image, frame_gray, CV_BGR2GRAY);
-  auto img = Image::Image(frame_gray);
-  this->edgeImage = new Image::Image(img.computeIDTEdgeImage());
+  auto img = image::Image(frame_gray);
+  this->edgeImage = new image::Image(img.computeIDTEdgeImage());
 }
 
 /**
  * @brief Nastaví point cloud pro klaibraci
  * @param pointCloud
  */
-void Calibrator::setPointCloud(pcl::PointCloud<but::calibration_camera_velodyne::Velodyne::Point> pointCloud) {
-  this->rawPCl = Velodyne::Velodyne(pointCloud);
-  this->pointCloud = Velodyne::Velodyne(pointCloud);
+void Calibrator::setPointCloud(
+    pcl::PointCloud<velodyne::Point> pointCloud
+) {
+  this->rawPCl = velodyne::Velodyne(pointCloud);
+  this->pointCloud = velodyne::Velodyne(pointCloud);
   this->pointCloud = this->pointCloud.transform(0, 0, 0, M_PI / 2, 0, 0);
-  this->edgePointCloud = Velodyne::Velodyne(this->pointCloud);
+  this->edgePointCloud = velodyne::Velodyne(this->pointCloud);
   edgePointCloud.intensityByRangeDiff();
   //edgePointCloud.view(POINTCLOUD_EDGE_TRASH_HOLD,"Set Pointcloud");
 //  this->pointCloud.normalizeIntensity(0.,1.);
@@ -145,7 +146,7 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
   }
 
   Calibration6DoF calib;
-  pcl::PointCloud<pcl::PointXYZRGB> * colorCloud;
+  pcl::PointCloud<pcl::PointXYZRGB> *colorCloud;
 
 //##############################################################################
 //
@@ -186,14 +187,16 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
 //##############################################################################
 
 
-  solvePnP(centers3D,
-           centers2D,
-           camera->K,
-           Mat(),
-           rVec,
-           tVec,
-           false,
-           cv::SOLVEPNP_AP3P);
+  solvePnP(
+      centers3D,
+      centers2D,
+      camera->K,
+      Mat(),
+      rVec,
+      tVec,
+      false,
+      cv::SOLVEPNP_AP3P
+  );
 
   calib.set(tVec, rVec, getSimilarity(tVec, rVec, "solvePnP - AP3P"));
   cout << "solvePnP - AP3P" << endl;
@@ -202,7 +205,7 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
   camera->rvec = rVec;
   camera->tvec = tVec;
   colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());
-  Velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
+  velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
 
 
 //##############################################################################
@@ -221,7 +224,7 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
   camera->rvec = rVec;
   camera->tvec = tVec;
   colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());
-  Velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
+  velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
 
 
 ////##############################################################################
@@ -295,13 +298,15 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
 ////##############################################################################
 //
 //
-//  cv::solveP3P(centers3D,
+//  cv::solveP3P(
+// centers3D,
 //               centers2D,
 //               camera->K,
 //               Mat(),
 //               rvecs,
 //               tvecs,
-//               cv::SOLVEPNP_AP3P);
+//               cv::SOLVEPNP_AP3P
+// );
 //
 //  for (unsigned int i = 0; i < rvecs.size(); ++i) {
 //    calib.set(tvecs[i], rvecs[i], getSimilarity(tvecs[i], rvecs[i], "solveAP3P"));
@@ -318,13 +323,15 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
     float distance_transl = 0.02;
     float distance_rot = 0.01;
     Calibration6DoF best_calibration, avg_calibration;
-    calibrationRefinement(tVec,
-                          rVec,
-                          distance_transl,
-                          distance_rot,
-                          divisions,
-                          best_calibration,
-                          avg_calibration);
+    calibrationRefinement(
+        tVec,
+        rVec,
+        distance_transl,
+        distance_rot,
+        divisions,
+        best_calibration,
+        avg_calibration
+    );
     avg_calibration.print();
 
     calib.set(tVec, rVec, getSimilarity(tVec, rVec, "calibrationRefinement"));
@@ -334,20 +341,21 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
     camera->rvec = rVec;
     camera->tvec = tVec;
     colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());
-    Velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
+    velodyne::Velodyne::view(pcl::PointCloud<pcl::PointXYZRGB>::Ptr(colorCloud));
   }
-    return calib;
-
-
+  return calib;
 
 }
 
-Calibrator::Calibrator(double circleDistance, double radius) : circleDistance(
-    circleDistance), radius(radius) {}
+Calibrator::Calibrator(double circleDistance, double radius) :
+    circleDistance(circleDistance),
+    radius(radius) {}
 
-double Calibrator::getSimilarity(cv::Mat &tvec,
-                                 cv::Mat &rvec,
-                                 const char *title) {
+double Calibrator::getSimilarity(
+    cv::Mat &tvec,
+    cv::Mat &rvec,
+    const char *title
+) {
 
   ASSERT_IS_VEC_3D(tvec);
   ASSERT_IS_VEC_3D(rvec);
@@ -366,9 +374,9 @@ double Calibrator::getSimilarity(cv::Mat &tvec,
 
     Mat imagePoints;
     Point3d p3d;
-    p3d.x = (double)pt.x;
-    p3d.y = (double)pt.y;
-    p3d.z = (double)pt.z;
+    p3d.x = (double) pt.x;
+    p3d.y = (double) pt.y;
+    p3d.z = (double) pt.z;
 
     vector<Point3d> objectPoints;
     objectPoints.push_back(p3d);
@@ -395,12 +403,14 @@ Calibrator::~Calibrator() {
   delete edgeImage;
 }
 
-void Calibrator::findTranslation(std::vector<cv::Point2f> image,
-                                 std::vector<cv::Point3f> velodyne,
-                                 double radius2D,
-                                 double radius3D,
-                                 cv::Mat tVec,
-                                 cv::Mat rVec) {
+void Calibrator::findTranslation(
+    std::vector<cv::Point2f> image,
+    std::vector<cv::Point3f> velodyne,
+    double radius2D,
+    double radius3D,
+    cv::Mat tVec,
+    cv::Mat rVec
+) {
   auto projection = camera->P;
 
   rVec = VEC_3D;
@@ -450,8 +460,8 @@ void Calibrator::calibrationRefinement(cv::Mat tVec,
 
   auto P = camera->P;
 
-  auto image = Image::Image(this->image);
-  image = Image::Image(image.computeIDTEdgeImage());
+  auto image = image::Image(this->image);
+  image = image::Image(image.computeIDTEdgeImage());
 
   float x_min = x_rough - max_translation;
   float y_min = y_rough - max_translation;
@@ -463,11 +473,19 @@ void Calibrator::calibrationRefinement(cv::Mat tVec,
   float step_transl = max_translation * 2 / (steps - 1);
   float step_rot = max_rotation * 2 / (steps - 1);
 
-  Velodyne::Velodyne transformed =
+  velodyne::Velodyne transformed =
       edgePointCloud.transform(x_rough, y_rough, z_rough, 0, 0, 0);
   double rough_val = Similarity::edgeSimilarity(image, transformed, P);
 
-  best_calibration.set(static_cast<double>(x_rough), static_cast<double>(y_rough), static_cast<double>(z_rough), 0, 0, 0, rough_val);
+  best_calibration.set(
+      static_cast<double>(x_rough),
+      static_cast<double>(y_rough),
+      static_cast<double>(z_rough),
+      0,
+      0,
+      0,
+      rough_val
+  );
 
   int counter = 0;
 

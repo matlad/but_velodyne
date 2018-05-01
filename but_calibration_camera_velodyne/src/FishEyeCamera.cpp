@@ -5,13 +5,13 @@
  * @author   Adam Mátl <xmatla00@stud.fit.vutbr.cz> <matla@matla.cz>
  */
 #include "but_calibration_camera_velodyne/FishEyeCamera.h"
-namespace but::calibration_camera_velodyne{
+
+namespace but::calibration_camera_velodyne {
 using cv::Point2i;
 using cv::Point3f;
 using cv::Mat;
 using std::vector;
 using cv::fisheye::projectPoints;
-
 
 Point2i FishEyeCamera::project(Point3f) {
   Mat imagePoints;
@@ -21,10 +21,10 @@ Point2i FishEyeCamera::project(Point3f) {
   return imagePoints.at<Point2i>(1);
 }
 
-Image::Image FishEyeCamera::undisort(Image::Image image) {
+image::Image FishEyeCamera::undisort(image::Image image) {
   auto img = image.getImg();
   cv::fisheye::undistortImage(img, img, K, D, K);
-  return Image::Image(img);
+  return image::Image(img);
 }
 
 }

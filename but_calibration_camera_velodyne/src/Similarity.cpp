@@ -10,19 +10,15 @@
 using namespace std;
 using namespace cv;
 
-namespace but::calibration_camera_velodyne
-{
+namespace but::calibration_camera_velodyne {
 
-void Similarity::computeEntropies()
-{
+void Similarity::computeEntropies() {
   vector<float> histogram_X(INTENSITIES, 0);
   vector<float> histogram_Y(INTENSITIES, 0);
   map<pair<uchar, uchar>, float> joint_histogram;
 
-  for (int row = 0; row < X.rows; row++)
-  {
-    for (int col = 0; col < X.cols; col++)
-    {
+  for (int row = 0; row < X.rows; row++) {
+    for (int col = 0; col < X.cols; col++) {
       uchar x_val = X.at<uchar>(row, col);
       uchar y_val = Y.at<uchar>(row, col);
 
@@ -36,24 +32,21 @@ void Similarity::computeEntropies()
   float p;
   float points_nm = X.rows * X.cols;
   H_X = H_Y = H_XY = 0;
-  for (int i = 0; i < INTENSITIES; i++)
-  {
+  for (int i = 0; i < INTENSITIES; i++) {
     p = histogram_X[i] / points_nm;
-    if (p > 0)
-    {
+    if (p > 0) {
       H_X += -p * log(p);
     }
 
     p = histogram_Y[i] / points_nm;
-    if (p > 0)
-    {
+    if (p > 0) {
       H_Y += -p * log(p);
     }
   }
 
   float points_nm_pow = points_nm * points_nm;
-  for (map<pair<uchar, uchar>, float>::iterator i = joint_histogram.begin(); i != joint_histogram.end(); i++)
-  {
+  for (map<pair<uchar, uchar>, float>::iterator i = joint_histogram.begin();
+       i != joint_histogram.end(); i++) {
     p = i->second / points_nm_pow;
     H_XY = -p * log(p);
   }

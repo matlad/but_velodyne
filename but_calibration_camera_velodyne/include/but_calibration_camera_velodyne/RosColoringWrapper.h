@@ -21,11 +21,16 @@ namespace but::calibration_camera_velodyne {
 class RosColoringWrapper {
 
   std::vector<double> sixDoF;
+
   Colorizer colorizer;
+
   ros::Publisher publisher;
 
  public:
-  RosColoringWrapper(const ros::Publisher &publisher,const std::vector<float> &sixDoF);
+  RosColoringWrapper(
+      const ros::Publisher &publisher,
+      const std::vector<double> &sixDoF
+  );
 
   void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &imageInfo);
   void pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr &pointCloud);

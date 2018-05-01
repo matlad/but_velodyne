@@ -25,7 +25,7 @@
  * @param image oprázek k zobraszení
  * @param char * title titulek okna
  */
-#define SHOW_IMAGE(image,title)\
+#define SHOW_IMAGE(image, title)\
   cv::namedWindow((title), CV_WINDOW_AUTOSIZE);\
   cv::imshow((title), image);\
   cv::waitKey(0);\
@@ -37,8 +37,6 @@
 assert((vec).cols == 1);\
 assert((vec).rows == 3);\
 assert((vec).type() == CV_64FC1);
-
-
 
 #define GENERATE_3D_POINTS()\
 std::vector<cv::Point3d> points;                                               \
@@ -72,8 +70,7 @@ points.push_back(cv::Point3d(x, y, z));                                        \
 x = -0.336698; y = -0.0989147; z = 1.37389;                                    \
 points.push_back(cv::Point3d(x, y, z));
 
-
-#define CIRCLE_3D(modelCoefficients,center,radii)                              \
+#define CIRCLE_3D(modelCoefficients, center, radii)                              \
   (modelCoefficients).values.resize (7);                                       \
   (modelCoefficients).values[0] = (center).x;                                  \
   (modelCoefficients).values[1] = (center).y;                                  \
@@ -97,7 +94,5 @@ points.push_back(cv::Point3d(x, y, z));
   std::cout << "\r" << "[" << std::setw(___before) << "#"                      \
             << std::setw(___after) << "]" << std::flush;                       \
   ___time++;
-
-
 
 #endif //BUT_CALIBRATION_CAMERA_VELODYNE_MACROS_H

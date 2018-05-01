@@ -10,17 +10,16 @@
 #include "but_calibration_camera_velodyne/Camera.h"
 #include "but_calibration_camera_velodyne/Image.h"
 
-
 namespace but::calibration_camera_velodyne {
 
-class FishEyeCamera : public Camera{
+class FishEyeCamera : public Camera {
  public:
 
   /**
    * @brief
    * @return
    */
-  Image::Image undisort(Image::Image);
+  image::Image undisort(image::Image);
 
   /**
    * @brief Promítne

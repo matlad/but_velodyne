@@ -40,7 +40,7 @@ class Camera {
    * @brief
    * @return
    */
-  virtual Image::Image undisort(Image::Image) = 0;
+  virtual image::Image undisort(image::Image) = 0;
 
   /**
    * @brief Promítne

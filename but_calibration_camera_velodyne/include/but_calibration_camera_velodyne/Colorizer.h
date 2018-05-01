@@ -26,21 +26,23 @@ class Colorizer {
    */
   cv::Mat image;
 
-  Camera * camera;
+  Camera *camera;
 
-  but::calibration_camera_velodyne::Velodyne::Velodyne pointCloud;
+  but::calibration_camera_velodyne::velodyne::Velodyne pointCloud;
 
  public:
 
-  void setImage(cv::Mat& image);
+  void setImage(cv::Mat &image);
 
-  void setCamera(Camera * camera);
+  void setCamera(Camera *camera);
 
-  void setPointCloud(but::calibration_camera_velodyne::Velodyne::Velodyne pointCloud);
+  void setPointCloud(
+      but::calibration_camera_velodyne::velodyne::Velodyne pointCloud
+  );
 
-  pcl::PointCloud <pcl::PointXYZRGB>colourByFishEye();
+  pcl::PointCloud<pcl::PointXYZRGB> colourByFishEye();
 
-  pcl::PointCloud <pcl::PointXYZRGB> colorize();
+  pcl::PointCloud<pcl::PointXYZRGB> colorize();
 };
 }
 

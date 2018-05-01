@@ -28,9 +28,14 @@ class Calibration6DoF {
   double value; // NaN = wrong calibration
 
  public:
-  Calibration6DoF(double x, double y, double z,
-                  double x_r, double y_r, double z_r,
-                  double val
+  Calibration6DoF(
+      double x,
+      double y,
+      double z,
+      double x_r,
+      double y_r,
+      double z_r,
+      double val
   ) {
     set(x, y, z, x_r, y_r, z_r, val);
   }
@@ -41,12 +46,11 @@ class Calibration6DoF {
    * @param val
    * @see ::set(cv::Mat tvec, cv::Mat rvec, double val)
    */
-  Calibration6DoF(cv::Mat tvec, cv::Mat rvec, double val)
-  {
-    set(tvec,rvec,val);
+  Calibration6DoF(cv::Mat tvec, cv::Mat rvec, double val) {
+    set(tvec, rvec, val);
   };
 
-  Calibration6DoF(){
+  Calibration6DoF() {
     value = 0;
     DoF.resize(6, 0);
   }
@@ -59,8 +63,15 @@ class Calibration6DoF {
     return !std::isnan(value);
   }
 
-  void set(double x, double y, double z, double x_r, double y_r, double z_r, double val)
-  {
+  void set(
+      double x,
+      double y,
+      double z,
+      double x_r,
+      double y_r,
+      double z_r,
+      double val
+  ) {
     value = val;
 
     DoF.clear();
