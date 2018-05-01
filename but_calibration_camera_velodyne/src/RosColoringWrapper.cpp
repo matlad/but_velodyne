@@ -17,21 +17,21 @@ using pcl::toROSMsg;
 using cv::ROTATE_90_COUNTERCLOCKWISE;
 
 void RosColoringWrapper::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &imageInfo) {
-  auto camera = FishEyeCamera();
-  cv::Mat(3, 4, CV_64FC1, (void *) &imageInfo->P).copyTo(camera.P);
-  camera.P.convertTo(camera.P, CV_32FC1);
-  cv::Mat(imageInfo->D).copyTo(camera.D);
-  rotate(camera.D, camera.D, ROTATE_90_COUNTERCLOCKWISE);
-  cv::Mat(3, 3, CV_64FC1, (void *) &imageInfo->K).copyTo(camera.K);
+  CameraPtr camera = std::make_shared<FishEyeCamera>();
+  cv::Mat(3, 4, CV_64FC1, (void *) &imageInfo->P).copyTo(camera->P);
+  camera->P.convertTo(camera->P, CV_32FC1);
+  cv::Mat(imageInfo->D).copyTo(camera->D);
+  rotate(camera->D, camera->D, ROTATE_90_COUNTERCLOCKWISE);
+  cv::Mat(3, 3, CV_64FC1, (void *) &imageInfo->K).copyTo(camera->K);
 
-  camera.tvec = cv::Mat(1, 3, CV_64F, sixDoF.data());
-  camera.rvec = cv::Mat(1, 3, CV_64F, sixDoF.data() + 3);
+  camera->tvec = cv::Mat(1, 3, CV_64F, sixDoF.data());
+  camera->rvec = cv::Mat(1, 3, CV_64F, sixDoF.data() + 3);
 
-  ROS_DEBUG_STREAM("P: \n" << camera.P);
-  ROS_DEBUG_STREAM("D: \n" << camera.D);
-  ROS_DEBUG_STREAM("K: \n" << camera.K);
+  ROS_DEBUG_STREAM("P: \n" << camera->P);
+  ROS_DEBUG_STREAM("D: \n" << camera->D);
+  ROS_DEBUG_STREAM("K: \n" << camera->K);
 
-  colorizer.setCamera(&camera);
+  colorizer.setCamera(camera);
 }
 
 void RosColoringWrapper::imageFrameCallback(const sensor_msgs::ImageConstPtr &image) {

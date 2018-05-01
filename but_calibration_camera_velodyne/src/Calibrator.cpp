@@ -21,7 +21,6 @@
 #include <but_calibration_camera_velodyne/macros.h>
 #include <opencv2/core/types.hpp>
 
-#define INPUT_STORACE "/media/Linux_Data/Code/school/FIT_BAK_COLOR_LINDAR/src/but_velodyne/but_calibration_camera_velodyne/data/"
 
 using namespace but::calibration_camera_velodyne;
 using cv::Mat;
@@ -70,7 +69,7 @@ void Calibrator::setPointCloud(
  * @brief Nastaví (vnitřní parametry kamery)
  * @param camera
  */
-void Calibrator::setCamera(Camera *camera) {
+void Calibrator::setCamera(CameraPtr camera) {
   this->camera = camera;
 }
 

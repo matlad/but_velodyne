@@ -16,6 +16,7 @@
 #include <but_calibration_camera_velodyne/macros.h>
 #include "but_calibration_camera_velodyne/RosCalibratorWrapper.h"
 #include "but_calibration_camera_velodyne/FishEyeCamera.h"
+#include "but_calibration_camera_velodyne/Camera.h"
 #include "but_calibration_camera_velodyne/Calibration6DoF.h"
 
 #define BREAK 0
@@ -57,18 +58,18 @@ void RosCalibratorWrapper::callback(
 }
 
 void RosCalibratorWrapper::processImageInfo(const sensor_msgs::CameraInfoConstPtr &imageInfo) {
-  auto camera = FishEyeCamera();
-  cv::Mat(3, 4, CV_64FC1, (void *) &imageInfo->P).copyTo(camera.P);
-  camera.P.convertTo(camera.P, CV_32FC1);
-  cv::Mat(imageInfo->D).copyTo(camera.D);
-  rotate(camera.D, camera.D, ROTATE_90_COUNTERCLOCKWISE);
-  cv::Mat(3, 3, CV_64FC1, (void *) &imageInfo->K).copyTo(camera.K);
+  CameraPtr camera = std::make_shared<FishEyeCamera>();
+  cv::Mat(3, 4, CV_64FC1, (void *) &imageInfo->P).copyTo(camera->P);
+  camera->P.convertTo(camera->P, CV_32FC1);
+  cv::Mat(imageInfo->D).copyTo(camera->D);
+  rotate(camera->D, camera->D, ROTATE_90_COUNTERCLOCKWISE);
+  cv::Mat(3, 3, CV_64FC1, (void *) &imageInfo->K).copyTo(camera->K);
 
-  ROS_DEBUG_STREAM("P: \n" << camera.P);
-  ROS_DEBUG_STREAM("D: \n" << camera.D);
-  ROS_DEBUG_STREAM("K: \n" << camera.K);
+  ROS_DEBUG_STREAM("P: \n" << camera->P);
+  ROS_DEBUG_STREAM("D: \n" << camera->D);
+  ROS_DEBUG_STREAM("K: \n" << camera->K);
 
-  calibrator.setCamera(&camera);
+  calibrator.setCamera(camera);
 }
 
 void RosCalibratorWrapper::processImage(const sensor_msgs::ImageConstPtr &image) {

@@ -23,7 +23,7 @@ namespace but::calibration_camera_velodyne {
 class Calibrator {
 
   /**
-   * @brief Zpracovávaný obraz
+   * @brief Zpracovávaný obraz.
    */
   cv::Mat image;
 
@@ -34,27 +34,27 @@ class Calibrator {
   image::Image *edgeImage = nullptr;
 
   /**
-   * @brief Zpracovávaný point cloud
+   * @brief Zpracovávané mračno bodů.
    */
   velodyne::Velodyne pointCloud;
 
   /**
-   * @brief pointCloud s intensity podle hran
+   * @brief Mračno bodů s detekovanými hranami v intensity.
    */
   velodyne::Velodyne edgePointCloud;
 
   /**
-   * @brief Vnitřní parametry kamery
+   * @brief Parametry kamery.
    */
-  Camera *camera;
+  CameraPtr camera;
 
   /**
-   * @brief Vzdálenost kruhů v
+   * @brief Vzdálenost kruhů v metrech.
    */
   double circleDistance;
 
   /**
-   * @brief Rádius kruhů markeru
+   * @brief Rádius kruhů markeru v metrech.
    */
   double radius;
 
@@ -62,34 +62,34 @@ class Calibrator {
 
   /**
    * @brief Nastaví obraz pro zpracování.
-   * @waring cameraParameters musí bít nastaveny před voláním této fce.
+   * @waring cameraParameters musí být nastaveny před voláním této fce.
    * @param image
    */
   void setImage(cv::Mat image);
 
   /**
-   *  Nastaví pointcloud ke zpracování
+   * @brief Nastaví mračno bodů ke zpracování.
    */
   void setPointCloud(velodyne::oldVPointCloud cloud);
 
   /**
-   * @brief nastaví parametry kamery
+   * @brief Nastaví parametry kamery.
    * @param camera
    */
-  void setCamera(Camera *camera);
+  void setCamera(CameraPtr camera);
 
   /**
-   * @brief opraví zkreslení zpracovávaného obrazu
+   * @brief Opraví zkreslení zpracovávaného obrazu.
    */
   void undistortImage();
 
   /**
    * @brief Odhadne translaci kamery vůči lidaru
-   * Předpokádá, že kamera a lidar jsou natočeny teměř stejně a to čelem kolmo k markeru
+   * Předpokládá, že kamera a lidar jsou natočeny téměř stejně a to čelem kolmo k markeru
    * @param image středy kruhů v obraze
-   * @param velodyne středy kruhů v pointCloudu
+   * @param velodyne středy kruhů v mračně bodů
    * @param radius2D  radius kruhů v obraze
-   * @param radius3D  rádius kruhů v poitCloudu
+   * @param radius3D  rádius kruhů v mračně bodů
    * @return
    */
   void findTranslation(
@@ -137,8 +137,6 @@ class Calibrator {
   );
 
   virtual ~Calibrator();
-
-  double getSimilarity2(cv::Mat &tvec, cv::Mat &rvec, const char *title);
 
   velodyne::Velodyne rawPCl;
 

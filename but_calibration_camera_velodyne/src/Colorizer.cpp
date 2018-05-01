@@ -41,7 +41,7 @@ void Colorizer::setImage(Mat &image) {
   this->image = image;
 }
 
-void Colorizer::setCamera(Camera *camera) {
+void Colorizer::setCamera(CameraPtr camera) {
   this->camera = camera;
 }
 

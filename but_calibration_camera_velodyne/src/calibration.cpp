@@ -13,6 +13,7 @@
 #include <but_calibration_camera_velodyne/Calibrator.h>
 #include <but_calibration_camera_velodyne/Velodyne.h>
 #include <but_calibration_camera_velodyne/FishEyeCamera.h>
+#include <but_calibration_camera_velodyne/Camera.h>
 
 #define ARG_FRAME 1
 #define ARG_CAMERA_PARAMETERS 2
@@ -26,6 +27,8 @@ using pcl::io::loadPCDFile;
 using but::calibration_camera_velodyne::Calibrator;
 using but::calibration_camera_velodyne::velodyne::oldVPointCloud;
 using but::calibration_camera_velodyne::FishEyeCamera;
+using but::calibration_camera_velodyne::Camera;
+using but::calibration_camera_velodyne::CameraPtr;
 using but::calibration_camera_velodyne::Calibration6DoF;
 using std::clog;
 using std::cerr;
@@ -55,18 +58,18 @@ int main(int argc, char *argv[]) {
     return error("Chyba při načítání obrázku");
   }
 
-  FishEyeCamera camera;
+  CameraPtr camera = std::make_shared<FishEyeCamera>();
 
   cv::FileStorage fs_P(argv[ARG_CAMERA_PARAMETERS], cv::FileStorage::READ);
-  fs_P["P"] >> camera.P;
-  fs_P["D"] >> camera.D;
-  fs_P["K"] >> camera.K;
+  fs_P["P"] >> camera->P;
+  fs_P["D"] >> camera->D;
+  fs_P["K"] >> camera->K;
   fs_P.release();
 
-  camera.tvec = VEC_3D;
-  camera.rvec = VEC_3D;
+  camera->tvec = VEC_3D;
+  camera->rvec = VEC_3D;
 
-  clog << camera << endl;
+  clog << *camera << endl;
 
   oldVPointCloud pointCloud;
   pcl::io::loadPCDFile(argv[ARG_POINT_CLOUD], pointCloud);
@@ -78,7 +81,7 @@ int main(int argc, char *argv[]) {
   auto circleRadius = strtod(argv[ARG_CIRCLES_RADIUS], nullptr);
 
   Calibrator calibrator(circleDistance, circleRadius);
-  calibrator.setCamera(&camera);
+  calibrator.setCamera(camera);
   calibrator.setImage(image);
   calibrator.setPointCloud(pointCloud);
 

@@ -7,10 +7,10 @@
 #ifndef BUT_CALIBRATION_CAMERA_VELODYNE_CAMERAPARAMERETS_H
 #define BUT_CALIBRATION_CAMERA_VELODYNE_CAMERAPARAMERETS_H
 
-#include <opencv2/core/matx.hpp>
 #include <opencv2/core/mat.hpp>
 #include <ostream>
-#include "but_calibration_camera_velodyne/Image.h"
+#include <but_calibration_camera_velodyne/Image.h>
+#include <memory>
 
 namespace but::calibration_camera_velodyne {
 
@@ -18,17 +18,17 @@ class Camera {
  public:
 
   /**
-   * @brief Kamera matrix
+   * @brief Kamera matrix.
    */
   cv::Mat K;
 
   /**
-   * @brief Projection matrix
+   * @brief Projection matrix.
    */
   cv::Mat P;
 
   /**
-   * @brief koeficienty zkreslení
+   * @brief Koeficienty zkreslení.
    */
   cv::Mat D;
 
@@ -49,32 +49,39 @@ class Camera {
   virtual cv::Point2i project(cv::Point3f) = 0;
 
   /**
-   * @brief délka ohniska v metrech
-   * @return
+   * @brief Délka ohniska v metrech.
+   * @return metry
    */
   double K_fx();
 
   /**
-   * @brief délka ohniska v metrech
-   * @return
+   * @brief Délka ohniska v metrech.
+   * @return metry
    */
   double K_fy();
 
   /**
-   * @brief x souřadnice hlavního snímkového bodu
+   * @brief X souřadnice hlavního snímkového bodu.
    * @return pixels
    */
   double K_cx();
 
   /**
-   * @brief y x souřadnice hlavního snímkového bodu
+   * @brief Y souřadnice hlavního snímkového bodu.
    * @return pixels
    */
   double K_cy();
 
+  /**
+   * @brief Vypíše přehled parametrů.
+   * @param os
+   * @param camera
+   * @return
+   */
   friend std::ostream &operator<<(std::ostream &os, const Camera &camera);
 };
 
+typedef std::shared_ptr<Camera> CameraPtr;
 }
 
 #endif //BUT_CALIBRATION_CAMERA_VELODYNE_CAMERAPARAMERETS_H

@@ -13,6 +13,7 @@
 #include <but_calibration_camera_velodyne/Colorizer.h>
 #include <but_calibration_camera_velodyne/Velodyne.h>
 #include <but_calibration_camera_velodyne/FishEyeCamera.h>
+#include <but_calibration_camera_velodyne/Camera.h>
 
 using cv::Mat;
 using cv::imread;
@@ -21,6 +22,7 @@ using but::calibration_camera_velodyne::Colorizer;
 using but::calibration_camera_velodyne::velodyne::oldVPointCloud;
 using but::calibration_camera_velodyne::velodyne::Velodyne;
 using but::calibration_camera_velodyne::FishEyeCamera;
+using but::calibration_camera_velodyne::CameraPtr;
 using std::cerr;
 using std::endl;
 
@@ -43,24 +45,24 @@ int main(int argc, char *argv[]) {
     return error("Chyba při načítání obrázku");
   }
 
-  FishEyeCamera camera;
+  CameraPtr camera = std::shared_ptr<FishEyeCamera>();
 
   cv::FileStorage fs_P(argv[2], cv::FileStorage::READ);
   if (!fs_P.isOpened()) {
     return error("Chyba při otevření souboru s parametry kamery");
   }
-  fs_P["P"] >> camera.P;
-  fs_P["D"] >> camera.D;
-  fs_P["K"] >> camera.K;
-  fs_P["tvec"] >> camera.tvec;
-  fs_P["rvec"] >> camera.rvec;
+  fs_P["P"] >> camera->P;
+  fs_P["D"] >> camera->D;
+  fs_P["K"] >> camera->K;
+  fs_P["tvec"] >> camera->tvec;
+  fs_P["rvec"] >> camera->rvec;
   fs_P.release();
 
-  cout << "P:" << camera.P << "\n\n"
-       << "D:" << camera.D << "\n\n"
-       << "K:" << camera.K << "\n\n"
-       << "tvec:" << camera.tvec << "\n\n"
-       << "rvec:" << camera.rvec << "\n"
+  cout << "P:" << camera->P << "\n\n"
+       << "D:" << camera->D << "\n\n"
+       << "K:" << camera->K << "\n\n"
+       << "tvec:" << camera->tvec << "\n\n"
+       << "rvec:" << camera->rvec << "\n"
        << endl;
 
   oldVPointCloud pointCloud;
@@ -70,7 +72,7 @@ int main(int argc, char *argv[]) {
   }
 
   Colorizer colorizer;
-  colorizer.setCamera(&camera);
+  colorizer.setCamera(camera);
   colorizer.setImage(image);
   colorizer.setPointCloud(pointCloud);
 

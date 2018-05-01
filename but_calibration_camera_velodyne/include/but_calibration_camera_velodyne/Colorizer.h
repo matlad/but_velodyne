@@ -17,32 +17,58 @@
 
 namespace but::calibration_camera_velodyne {
 /**
- * @brief Třída pro obarvování pointcoudu
+ * @brief Třída pro obarvování mračna bodů
  */
 class Colorizer {
 
   /**
-   * @brief obraz pomocí něho bude pointcloud obarven
+   * @brief Obraz pomocí něho bude mračno bodů obarveno.
    */
   cv::Mat image;
 
-  Camera *camera;
+  /**
+   * @brief Parametry, kamery pomoci které byl pořízen snímek k obarvení.
+   */
+  CameraPtr camera;
 
-  but::calibration_camera_velodyne::velodyne::Velodyne pointCloud;
+  /**
+   * @brief Mračno bodů k obarvení k obarvení.
+   */
+  velodyne::Velodyne pointCloud;
 
  public:
 
+  /**
+   * @brief Nastaví obraz pomocí něhož se bude obarvovat.
+   * @param image
+   */
   void setImage(cv::Mat &image);
 
-  void setCamera(Camera *camera);
+  /**
+   * @brief Nastaví Parametry, kamery pomoci které byl pořízen snímek k obarvení.
+   * @param camera
+   */
+  void setCamera(CameraPtr camera);
 
-  void setPointCloud(
-      but::calibration_camera_velodyne::velodyne::Velodyne pointCloud
-  );
+  /**
+   * @brief Nastaví mračno bodů k obarvení.
+   * @param pointCloud
+   */
+  void setPointCloud(velodyne::Velodyne pointCloud);
 
-  pcl::PointCloud<pcl::PointXYZRGB> colourByFishEye();
-
+  /**
+   * @brief Obarví mračno bodů.
+   * @return Obarvené mračno
+   */
   pcl::PointCloud<pcl::PointXYZRGB> colorize();
+
+ private:
+
+  /**
+   * @brief Obarví mračno bodů snímkem z kamery typu rybí oko
+   * @return Obarvené mračno
+   */
+  pcl::PointCloud<pcl::PointXYZRGB> colourByFishEye();
 };
 }
 
