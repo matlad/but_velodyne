@@ -48,9 +48,11 @@ int main(int argc, char *argv[]) {
   CameraPtr camera = std::shared_ptr<FishEyeCamera>();
 
   cv::FileStorage fs_P(argv[2], cv::FileStorage::READ);
+
   if (!fs_P.isOpened()) {
     return error("Chyba při otevření souboru s parametry kamery");
   }
+
   fs_P["P"] >> camera->P;
   fs_P["D"] >> camera->D;
   fs_P["K"] >> camera->K;
@@ -67,13 +69,14 @@ int main(int argc, char *argv[]) {
 
   oldVPointCloud pointCloud;
   pcl::io::loadPCDFile(argv[3], pointCloud);
+
   if (pointCloud.empty()) {
     return error("Chyba při načítání pointCloud");
   }
 
   Colorizer colorizer;
-  colorizer.setCamera(camera);
-  colorizer.setImage(image);
+  colorizer.setFrontCamera(camera);
+  colorizer.setFrontImage(image);
   colorizer.setPointCloud(pointCloud);
 
   auto colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());

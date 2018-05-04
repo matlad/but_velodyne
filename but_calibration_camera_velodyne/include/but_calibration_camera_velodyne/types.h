@@ -7,6 +7,9 @@
 #ifndef BUT_CALIBRATION_CAMERA_VELODYNE_TYPES_H
 #define BUT_CALIBRATION_CAMERA_VELODYNE_TYPES_H
 
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
+
 namespace but::calibration_camera_velodyne {
 
 /**
@@ -16,5 +19,7 @@ namespace but::calibration_camera_velodyne {
 unsigned char operator "" _rgb_c(unsigned long long in);
 
 }
+
+typedef pcl::PointCloud<pcl::PointXYZRGB> ColorPointCloud;
 
 #endif //BUT_CALIBRATION_CAMERA_VELODYNE_TYPES_H

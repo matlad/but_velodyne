@@ -9,11 +9,9 @@
 
 #include <cstdlib>
 #include <cstdio>
-#include <boost/foreach.hpp>
 
 #include "opencv2/opencv.hpp"
 
-#include <image_transport/image_transport.h>
 #include <tf/tf.h>
 #include <velodyne_pointcloud/point_types.h>
 
@@ -37,16 +35,33 @@ using namespace pcl;
 using namespace but::calibration_camera_velodyne;
 using namespace but::calibration_camera_velodyne::velodyne;
 
-void Colorizer::setImage(Mat &image) {
-  this->image = image;
+void Colorizer::setFrontImage(Mat &image) {
+  frontImage = image;
+  cv::rotate(frontImage, frontImage, cv::ROTATE_90_CLOCKWISE);
+  auto img = image::Image(frontImage);
+  auto edge = img.computeEdgeImage();
+  cv::cvtColor(edge, frontImage, cv::COLOR_GRAY2BGR);
+  //SHOW_IMAGE(frontImage,"frontImage");
 }
 
-void Colorizer::setCamera(CameraPtr camera) {
-  this->camera = camera;
+void Colorizer::setBackImage(Mat &image) {
+  backImage = image;
+  cv::rotate(backImage, backImage, cv::ROTATE_90_COUNTERCLOCKWISE);
+  auto img = image::Image(backImage);
+  auto edge = img.computeEdgeImage();
+  cv::cvtColor(edge, backImage, cv::COLOR_GRAY2BGR);
+  //SHOW_IMAGE(backImage,"backImage");
+}
+
+void Colorizer::setFrontCamera(CameraPtr camera) {
+  frontCamera = camera;
+}
+
+void Colorizer::setBackCamera(CameraPtr camera) {
+  backCamera = camera;
 }
 
 void Colorizer::setPointCloud(velodyne::Velodyne pointCloud) {
-  ;
   this->pointCloud = pointCloud.ros2ButCoordinateSystem();
   //this->pointCloud.view();
 }
@@ -57,99 +72,63 @@ PointCloud<PointXYZRGB> Colorizer::colorize() {
 
   // reverse axix switching:
   Eigen::Affine3f transf = getTransformation(0, 0, 0, -M_PI / 2, 0, 0);
-  // transformPointCloud(colorCloud, colorCloud, transf);
+  transformPointCloud(colorCloud, colorCloud, transf);
 
   return colorCloud;
 }
 
 PointCloud<PointXYZRGB> Colorizer::colourByFishEye() {
+  
+  DEBUG_STREAM(*frontCamera);
 
-  clog << *camera << endl;
-
-  PointCloud<PointXYZRGB> colorPointCloud;
-
-  auto pointCloudTransform = pointCloud.transform(camera->tvec, camera->rvec);
-
-  Mat color;
-  Mat image;
-  fisheye::undistortImage(this->image, color, camera->K, camera->D, camera->K);
-
-  cv::rotate(color, color, cv::ROTATE_90_CLOCKWISE);
-  //SHOW_IMAGE(color,"undisort");
-
-
-  cv::Rect frame(cv::Point(0, 0), color.size());
-  pointCloudTransform.normalizeIntensity(0, 1);
-  //pointCloudTransform.view(0, "pointCloudTransform");
-  for (auto pt : pointCloudTransform) {
-
-    cv::Point xy = velodyne::Velodyne::project(pt, camera->P);
-    //cv::Point xy = camera->project(Point3f(pt.x, pt.y, pt.z));
-
-    if (pt.z > 0 && xy.inside(frame)) {
-
-      assert(pt.intensity <= 1);
-
-      // Překreslení bodů z kamery projekcí bodu z lidaru
-      color.at<cv::Vec3b>(xy)[RED] = static_cast<u_char>(pt.intensity * 255);
-      color.at<cv::Vec3b>(xy)[GREEN] =
-          pt.intensity < POINTCLOUD_EDGE_TRASH_HOLD ? 255_rgb_c : 0_rgb_c;
-      color.at<cv::Vec3b>(xy)[BLUE] =
-          pt.intensity < POINTCLOUD_EDGE_TRASH_HOLD ? 0_rgb_c : 255_rgb_c;
-    }
-  }
-  SHOW_IMAGE(color, "simlrarity");
-
-  cv::rotate(this->image, image, cv::ROTATE_90_CLOCKWISE);
-
-  //pointCloud = pointCloud.transform(camera->tvec, camera->rvec);
+  auto pointCloudTransform = pointCloud.transform(frontCamera->tvec, frontCamera->rvec);
 
   vector<Point3f> cvPointCloud;
-  auto pclPointCloud = this->pointCloud.getPointCloud();
+  pointCloudTransform.convertTo(&cvPointCloud);
 
-  for (auto point:pointCloudTransform) {
-    cvPointCloud.push_back(Point3d((double) point.x,
-                                   (double) point.y,
-                                   (double) point.z));
-  }
 
   Mat zeroVec = VEC_3D;
+  Mat back = VEC_3D;
 
-  vector<Point2f> projectedPoints;
+  vector<Point2f> frontProjectedPoints;
 
   fisheye::projectPoints(
       cvPointCloud,
-      projectedPoints,
+      frontProjectedPoints,
       zeroVec,
       zeroVec,
-      camera->K,
-      camera->D
+      frontCamera->K,
+      frontCamera->D
   );
-
-  cout << *camera << endl;
 
   Vec3b rgbDefault(255, 0, 0);
 
-  for (size_t iter = 0; iter < pclPointCloud.points.size(); iter++) {
+  cv::Rect frame(cv::Point(0, 0), frontImage.size());
+
+  for (size_t iter = 0; iter < pointCloud.size(); iter++) {
 
     assert(iter <= INT_MAX);
 
-    Point2f xy = projectedPoints[iter];
+    Point2f xy = frontProjectedPoints[iter];
     Vec3b rgb;
 
-    if (pclPointCloud.at(iter).z < 0 || xy.y < 0 || xy.x < 0
-        || xy.y > image.rows || xy.x > image.cols) {
-      rgb = rgbDefault;
+    if (xy.inside(frame)) {
+      if (pointCloud[iter].z > 0) {
+        rgb = image::Image::atf(frontImage, xy);
+      } else {
+        rgb = image::Image::atf(backImage, xy);
+      }
     } else {
-      rgb = image::Image::atf(image, xy);
+      rgb = rgbDefault;
     }
 
     PointXYZRGB pt_rgb(rgb.val[RED], rgb.val[GREEN], rgb.val[BLUE]);
-    pt_rgb.x = pclPointCloud.at(iter).x;
-    pt_rgb.y = pclPointCloud.at(iter).y;
-    pt_rgb.z = pclPointCloud.at(iter).z;
+    pt_rgb.x = pointCloud[iter].x;
+    pt_rgb.y = pointCloud[iter].y;
+    pt_rgb.z = pointCloud[iter].z;
 
     colorPointCloud.push_back(pt_rgb);
   }
+  DEBUG_STREAM(colorPointCloud);
   return colorPointCloud;
 }

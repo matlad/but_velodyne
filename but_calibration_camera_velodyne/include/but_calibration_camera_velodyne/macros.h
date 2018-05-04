@@ -9,6 +9,7 @@
 
 #include <sys/ioctl.h>
 #include "opencv2/highgui.hpp"
+#include <but_calibration_camera_velodyne/color.h>
 
 /**
  * @brief pomocné makro pro makro BUT_STR
@@ -20,9 +21,17 @@
  */
 #define BUT_STR(val) STR_(val)
 
+
+#ifdef DEBUG
+  #define DEBUG_STREAM(stream)\
+     cout << COLOR_DEBUG << (stream) << COLOR_DEBUG_END << endl;
+#else
+  #define DEBUG_STREAM(stream)
+#endif
+
 /**
  * @brief Otevře okno a zobrazí obrázek.
- * @param image oprázek k zobraszení
+ * @param image obrázek k zobrazení
  * @param char * title titulek okna
  */
 #define SHOW_IMAGE(image, title)\
@@ -31,8 +40,14 @@
   cv::waitKey(0);\
   cv::destroyWindow((title));
 
+/**
+ * @brief Konstrukce matice o rozměrech 3x1 naplněnou nulami
+ */
 #define VEC_3D cv::Mat(3,1,CV_64FC1,cv::Scalar(0))
 
+/**
+ * @brief
+ */
 #define ASSERT_IS_VEC_3D(vec)\
 assert((vec).cols == 1);\
 assert((vec).rows == 3);\
@@ -70,6 +85,9 @@ points.push_back(cv::Point3d(x, y, z));                                        \
 x = -0.336698; y = -0.0989147; z = 1.37389;                                    \
 points.push_back(cv::Point3d(x, y, z));
 
+/**
+ * @brief nastaví model Coefficients, aby odpovídaly kruhu
+ */
 #define CIRCLE_3D(modelCoefficients, center, radii)                              \
   (modelCoefficients).values.resize (7);                                       \
   (modelCoefficients).values[0] = (center).x;                                  \
@@ -80,19 +98,20 @@ points.push_back(cv::Point3d(x, y, z));
   (modelCoefficients).values[5] = 0.001;                                       \
   (modelCoefficients).values[6] = (radii);
 
+/**
+ * @brief Inicializace proměnných pro čekací kolečko
+ * k pootočení kolečka použíjte IN_PROGRES_SPIN()
+ */
 #define IN_PROGRES_INIT()                                                      \
-  struct winsize ___window;                                                    \
-  ioctl(STDOUT_FILENO, TIOCGWINSZ, &___window);                                \
   int ___time = 0;                                                             \
-  int ___before = 0;                                                           \
-  int ___after = 0;                                                            \
-  int ___slideWihgt = ___window.ws_col == 2 ? 1 : ___window.ws_col -2;
+  char ___circle[4] = {'|','/','-','\\' };                                     \
 
+/**
+ * @brief Pootočí čekacím kolečkem.
+ * Vyžaduje aby předtím byla zavolána inicializace IN_PROGRES_INIT()
+ */
 #define IN_PROGRES_SPIN()                                                      \
-  ___before = (___time % (___slideWihgt)) +1;                                  \
-  ___after  = (___window.ws_col) - 1 -  ___before;                             \
-  std::cout << "\r" << "[" << std::setw(___before) << "#"                      \
-            << std::setw(___after) << "]" << std::flush;                       \
+  std::cout << "\r" << ___circle[___time%4] << std::flush;                     \
   ___time++;
 
 #endif //BUT_CALIBRATION_CAMERA_VELODYNE_MACROS_H

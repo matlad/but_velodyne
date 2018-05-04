@@ -9,6 +9,7 @@
 #include <but_calibration_camera_velodyne/FishEyeCamera.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <but_calibration_camera_velodyne/RosColoringWrapper.h>
+#include <but_calibration_camera_velodyne/macros.h>
 
 namespace but::calibration_camera_velodyne {
 using pcl::PointCloud;
@@ -16,7 +17,23 @@ using pcl::fromROSMsg;
 using pcl::toROSMsg;
 using cv::ROTATE_90_COUNTERCLOCKWISE;
 
-void RosColoringWrapper::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &imageInfo) {
+void RosColoringWrapper::frontCameraInfoCallback(
+    const sensor_msgs::CameraInfoConstPtr &imageInfo
+) {
+  CameraPtr camera = imageInfoToCamera(imageInfo);
+  colorizer.setFrontCamera(camera);
+}
+
+void RosColoringWrapper::backCameraInfoCallback(
+    const sensor_msgs::CameraInfoConstPtr &imageInfo
+) {
+  CameraPtr camera = imageInfoToCamera(imageInfo);
+  colorizer.setBackCamera(camera);
+}
+
+CameraPtr RosColoringWrapper::imageInfoToCamera(
+    const sensor_msgs::CameraInfoConstPtr &imageInfo
+) const {
   CameraPtr camera = std::make_shared<FishEyeCamera>();
   cv::Mat(3, 4, CV_64FC1, (void *) &imageInfo->P).copyTo(camera->P);
   camera->P.convertTo(camera->P, CV_32FC1);
@@ -24,20 +41,25 @@ void RosColoringWrapper::cameraInfoCallback(const sensor_msgs::CameraInfoConstPt
   rotate(camera->D, camera->D, ROTATE_90_COUNTERCLOCKWISE);
   cv::Mat(3, 3, CV_64FC1, (void *) &imageInfo->K).copyTo(camera->K);
 
-  camera->tvec = cv::Mat(1, 3, CV_64F, sixDoF.data());
-  camera->rvec = cv::Mat(1, 3, CV_64F, sixDoF.data() + 3);
 
-  ROS_DEBUG_STREAM("P: \n" << camera->P);
-  ROS_DEBUG_STREAM("D: \n" << camera->D);
-  ROS_DEBUG_STREAM("K: \n" << camera->K);
 
-  colorizer.setCamera(camera);
+  camera->tvec = cv::Mat(3, 1, CV_64F, (void *) sixDoF.data());
+  camera->rvec = cv::Mat(3, 1, CV_64F, (void *) (sixDoF.data() + 3));
+
+  //DEBUG_STREAM(camera);
+  return camera;
 }
 
-void RosColoringWrapper::imageFrameCallback(const sensor_msgs::ImageConstPtr &image) {
-  boost::shared_ptr<cv_bridge::CvImage>
-      cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
-  colorizer.setImage(cv_ptr->image);
+void RosColoringWrapper::frontImageFrameCallback(const sensor_msgs::ImageConstPtr &image) {
+  boost::shared_ptr<cv_bridge::CvImage> cv_ptr;
+  cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
+  colorizer.setFrontImage(cv_ptr->image);
+}
+
+void RosColoringWrapper::backImageFrameCallback(const sensor_msgs::ImageConstPtr &image) {
+  boost::shared_ptr<cv_bridge::CvImage> cv_ptr;
+  cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
+  colorizer.setBackImage(cv_ptr->image);
 }
 
 void RosColoringWrapper::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr &pointCloud) {

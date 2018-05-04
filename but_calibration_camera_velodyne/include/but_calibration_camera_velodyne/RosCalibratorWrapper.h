@@ -18,15 +18,20 @@ class RosCalibratorWrapper {
 
  public:
   void callback(
-      const sensor_msgs::ImageConstPtr &msg_img,
-      const sensor_msgs::CameraInfoConstPtr &msg_info,
+      const sensor_msgs::ImageConstPtr &frontImgMsg,
+      const sensor_msgs::CameraInfoConstPtr &frontInfoMsg,
+      const sensor_msgs::ImageConstPtr &backImgMsg,
+      const sensor_msgs::CameraInfoConstPtr &backInfoMsg,
       const sensor_msgs::PointCloud2ConstPtr &msg_pc
   );
-  void processImageInfo(const sensor_msgs::CameraInfoConstPtr &imageInfo);
-  void processImage(const sensor_msgs::ImageConstPtr &image);
+  void processFrontImageInfo(const sensor_msgs::CameraInfoConstPtr &imageInfo);
+  void processFrontImage(const sensor_msgs::ImageConstPtr &image);
   void processPointCloud(const sensor_msgs::PointCloud2ConstPtr &pointCloud);
 
   RosCalibratorWrapper(double distance, double radius);
+  but::calibration_camera_velodyne::CameraPtr imageInfoToCameraPtr(const sensor_msgs::CameraInfoConstPtr &imageInfo) const;
+  void processBackImageInfo(const sensor_msgs::CameraInfoConstPtr &imageInfo);
+  void processBackImage(const sensor_msgs::ImageConstPtr &image);
 };
 
 #endif //BUT_CALIBRATION_CAMERA_VELODYNE_ROSCALIBRATORWRAPPER_H

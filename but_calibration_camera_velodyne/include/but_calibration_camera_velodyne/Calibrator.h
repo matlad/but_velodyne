@@ -65,7 +65,7 @@ class Calibrator {
    * @waring cameraParameters musí být nastaveny před voláním této fce.
    * @param image
    */
-  void setImage(cv::Mat image);
+  void setFrontImage(cv::Mat image);
 
   /**
    * @brief Nastaví mračno bodů ke zpracování.
@@ -76,7 +76,7 @@ class Calibrator {
    * @brief Nastaví parametry kamery.
    * @param camera
    */
-  void setCamera(CameraPtr camera);
+  void setFrontCamera(CameraPtr camera);
 
   /**
    * @brief Opraví zkreslení zpracovávaného obrazu.
@@ -110,8 +110,8 @@ class Calibrator {
   void calibrationRefinement(
       cv::Mat tVec,
       cv::Mat rVec,
-      float max_translation,
-      float max_rotation,
+      double max_translation,
+      double max_rotation,
       unsigned steps,
       Calibration6DoF &best_calibration,
       Calibration6DoF &average

@@ -39,17 +39,31 @@ using std::string;
 int main(int argc, char **argv) {
   ros::init(argc, argv, "coloring_node");
 
-  string CAMERA_FRAME_TOPIC;
-  string CAMERA_INFO_TOPIC;
+  string FRONT_CAMERA_FRAME_TOPIC;
+  string FRONT_CAMERA_INFO_TOPIC;
+  string BACK_CAMERA_FRAME_TOPIC;
+  string BACK_CAMERA_INFO_TOPIC;
   string VELODYNE_TOPIC;
   string VELODYNE_COLOR_TOPIC;
   std::vector<double> sixDoF;
 
   ros::NodeHandle n;
-  n.getParam("/but_calibration_camera_velodyne/camera_frame_topic",
-             CAMERA_FRAME_TOPIC);
-  n.getParam("/but_calibration_camera_velodyne/camera_info_topic",
-             CAMERA_INFO_TOPIC);
+  n.getParam(
+      "/but_calibration_camera_velodyne/front_camera_frame_topic",
+      FRONT_CAMERA_FRAME_TOPIC
+  );
+  n.getParam(
+      "/but_calibration_camera_velodyne/front_camera_info_topic",
+      FRONT_CAMERA_INFO_TOPIC
+  );
+  n.getParam(
+      "/but_calibration_camera_velodyne/back_camera_frame_topic",
+      BACK_CAMERA_FRAME_TOPIC
+  );
+  n.getParam(
+      "/but_calibration_camera_velodyne/back_camera_info_topic",
+      BACK_CAMERA_INFO_TOPIC
+  );
   n.getParam("/but_calibration_camera_velodyne/velodyne_topic", VELODYNE_TOPIC);
   n.getParam("/but_calibration_camera_velodyne/velodyne_color_topic",
              VELODYNE_COLOR_TOPIC);
@@ -62,17 +76,31 @@ int main(int argc, char **argv) {
 
   // Subscribe input camera image
   image_transport::ImageTransport it(n);
-  image_transport::Subscriber sub = it.subscribe(
-      CAMERA_FRAME_TOPIC,
+  image_transport::Subscriber frontImg = it.subscribe(
+      FRONT_CAMERA_FRAME_TOPIC,
       10,
-      &RosColoringWrapper::imageFrameCallback,
+      &RosColoringWrapper::frontImageFrameCallback,
       &rosColoringWrapper
   );
 
-  ros::Subscriber info_sub = n.subscribe(
-      CAMERA_INFO_TOPIC,
+  image_transport::Subscriber backImg = it.subscribe(
+      BACK_CAMERA_FRAME_TOPIC,
       10,
-      &RosColoringWrapper::cameraInfoCallback,
+      &RosColoringWrapper::backImageFrameCallback,
+      &rosColoringWrapper
+  );
+
+  ros::Subscriber frontInfoSub = n.subscribe(
+      FRONT_CAMERA_INFO_TOPIC,
+      10,
+      &RosColoringWrapper::frontCameraInfoCallback,
+      &rosColoringWrapper
+  );
+
+  ros::Subscriber backInfoSub = n.subscribe(
+      BACK_CAMERA_INFO_TOPIC,
+      10,
+      &RosColoringWrapper::backCameraInfoCallback,
       &rosColoringWrapper
   );
 

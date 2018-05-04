@@ -23,56 +23,57 @@ using namespace cv;
 using namespace pcl;
 using namespace ros;
 
-namespace but::calibration_camera_velodyne {
+namespace but::calibration_camera_velodyne::velodyne {
 
-velodyne::Velodyne::Velodyne(PointCloud<Point> _point_cloud) :
+Velodyne::Velodyne(oldVPointCloud _point_cloud) :
     point_cloud(_point_cloud) {
-  //getRings();
 }
 
-velodyne::Velodyne velodyne::Velodyne::ros2ButCoordinateSystem() {
+Velodyne Velodyne::ros2ButCoordinateSystem() {
   return this->transform(0, 0, 0, M_PI / 2, 0, 0);
 }
 
-velodyne::Velodyne velodyne::Velodyne::but2RosCoordinateSystem() {
+Velodyne Velodyne::but2RosCoordinateSystem() {
   return this->transform(0, 0, 0, -M_PI / 2, 0, 0);
 }
 
-velodyne::Velodyne velodyne::Velodyne::transform(float x,
-                                                 float y,
-                                                 float z,
-                                                 float rot_x,
-                                                 float rot_y,
-                                                 float rot_z) {
-  Eigen::Affine3f transf = getTransformation(x, y, z, rot_x, rot_y, rot_z);
-  PointCloud<Point> new_cloud;
+Velodyne Velodyne::transform(
+    double x,
+    double y,
+    double z,
+    double rot_x,
+    double rot_y,
+    double rot_z
+) {
+  Eigen::Affine3d transf;
+  getTransformation(x, y, z, rot_x, rot_y, rot_z, transf);
+  oldVPointCloud new_cloud;
   transformPointCloud(point_cloud, new_cloud, transf);
   return Velodyne(new_cloud);
 }
 
-velodyne::Velodyne velodyne::Velodyne::transform(vector<float> DoF) {
-  ROS_ASSERT(DoF.size() == 6);
+Velodyne Velodyne::transform(array<double, 6> DoF) {
   return transform(DoF[0], DoF[1], DoF[2], DoF[3], DoF[4], DoF[5]);
 }
 
-Mat velodyne::Velodyne::project(Mat projection_matrix,
-                                Rect frame,
-                                PointCloud<Point> *visible_points) {
+Mat Velodyne::project(
+    Mat projection_matrix,
+    Rect frame,
+    oldVPointCloud *visible_points
+) {
   Mat plane = cv::Mat::zeros(frame.size(), CV_32FC1);
 
-  for (PointCloud<Point>::iterator pt = point_cloud.points.begin();
-       pt < point_cloud.points.end(); pt++) {
-
+  for (auto pt : point_cloud) {
     // behind the camera
-    if (pt->z < 0) {
+    if (pt.z < 0) {
       continue;
     }
 
-    float intensity = pt->intensity;
-    cv::Point xy = Velodyne::project(*pt, projection_matrix);
+    float intensity = pt.intensity;
+    cv::Point xy = Velodyne::project(pt, projection_matrix);
     if (xy.inside(frame)) {
-      if (visible_points != NULL) {
-        visible_points->push_back(*pt);
+      if (visible_points != nullptr) {
+        visible_points->push_back(pt);
       }
 
       //cv::circle(plane, xy, 3, intensity, -1);
@@ -90,12 +91,12 @@ Mat velodyne::Velodyne::project(Mat projection_matrix,
 }
 
 Mat
-velodyne::Velodyne::project(Mat projection_matrix, Rect frame, Mat image) {
+Velodyne::project(Mat projection_matrix, Rect frame, Mat image) {
   Mat plane = this->project(projection_matrix, frame, NULL);
   //equalizeHist(plane, plane);
   //equalizeHist(image, image);
 
-  ROS_ASSERT(frame.width == image.cols && frame.height == image.rows);
+  assert(frame.width == image.cols && frame.height == image.rows);
   Mat empty = Mat::zeros(frame.size(), CV_8UC1);
 
   Mat result_channel(frame.size(), CV_8UC3);
@@ -105,31 +106,33 @@ velodyne::Velodyne::project(Mat projection_matrix, Rect frame, Mat image) {
   return result_channel;
 }
 
-vector<vector<velodyne::Point *> > velodyne::Velodyne::getRings() {
-  vector<vector<Point *>> rings(Velodyne::Velodyne::RINGS_COUNT);
-  for (PointCloud<Point>::iterator pt = point_cloud.points.begin();
-       pt < point_cloud.points.end(); pt++) {
-    assert(pt->ring < RINGS_COUNT);
-    pt->range = sqrt(pt->x * pt->x + pt->y * pt->y + pt->z * pt->z);
+vector<vector<velodyne::Point *> > Velodyne::getRings() {
+  vector<vector<Point *>> rings(RINGS_COUNT);
 
-    rings[pt->ring].push_back(&(*pt));
+  for (auto &pt : point_cloud) {
+    assert(pt.ring < RINGS_COUNT);
+
+    pt.range = sqrt(pt.x * pt.x + pt.y * pt.y + pt.z * pt.z);
+
+    rings[pt.ring].push_back(&pt);
   }
+
   return rings;
 }
 
-void velodyne::Velodyne::intensityByRangeDiff() {
+void Velodyne::intensityByRangeDiff() {
   intensityByDiff(Processing::DISTORTIONS);
 }
 
-void velodyne::Velodyne::intensityByIntensityDiff() {
+void Velodyne::intensityByIntensityDiff() {
   intensityByDiff(Processing::INTENSITY_EDGES);
 }
 
-void velodyne::Velodyne::intensityByRangeDiff2() {
+void Velodyne::intensityByRangeDiff2() {
 
 }
 
-void velodyne::Velodyne::intensityByDiff(Processing processing) {
+void Velodyne::intensityByDiff(Processing processing) {
   auto rings = this->getRings();
   vector<int> convolutionKernel = {-1, -1, 0, 1, 1};
   assert(convolutionKernel.size() % 2 == 1);
@@ -206,7 +209,7 @@ void velodyne::Velodyne::intensityByDiff(Processing processing) {
   normalizeIntensity(0.0, 1.0);
 }
 
-void velodyne::Velodyne::convolution() {
+void Velodyne::convolution() {
 
   vector<vector<int>> convolutionKernel_h =
       {
@@ -223,9 +226,11 @@ void velodyne::Velodyne::convolution() {
       };
 
   vector<pair<Point *, float>> newIntensityMap;
+
   float new_intensity_h = 0;
   float new_intensity_v = 0;
   float new_intensity = 0;
+
   auto rings = getRings();
 
   size_t ringsCount = rings.size();
@@ -312,38 +317,47 @@ void velodyne::Velodyne::convolution() {
 
 }
 
-PointCloud<PointXYZ> *velodyne::Velodyne::toPointsXYZ() {
-  PointCloud<PointXYZ> *new_cloud = new PointCloud<PointXYZ>();
-  for (PointCloud<Point>::iterator pt = point_cloud.points
-      .begin(); pt < point_cloud.points.end(); pt++) {
-    new_cloud->push_back(PointXYZ(pt->x, pt->y, pt->z));
+void Velodyne::convertTo(vector<Point3d> *destination) {
+  for (auto point:*this) {
+    destination->emplace_back(
+        Point3d(
+            static_cast<double>(point.x),
+            static_cast<double>(point.y),
+            static_cast<double>(point.z)
+        )
+    );
+  }
+}
+
+void Velodyne::convertTo(vector<Point3f> *destination) {
+  for (auto point:*this) {
+    destination->emplace_back(Point3f(point.x, point.y, point.z));
+  }
+}
+
+PointCloud<PointXYZ> *Velodyne::toPointsXYZ() {
+  auto *new_cloud = new PointCloud<PointXYZ>();
+  for (auto pt : point_cloud) {
+    new_cloud->push_back(PointXYZ(pt.x, pt.y, pt.z));
   }
   return new_cloud;
 }
 
-PointCloud<PointXYZRGB> *velodyne::Velodyne::toPointsXYZRGB() {
+PointCloud<PointXYZRGB> *Velodyne::toPointsXYZRGB() {
 
   auto new_cloud = new PointCloud<PointXYZRGB>();
 
   this->normalizeIntensity(15, 255);
 
-  float min_found = INFINITY;
-  float max_found = -INFINITY;
+  for (auto point : point_cloud) {
+    auto intensity = static_cast<uchar>(point.intensity);
 
-  for (PointCloud<Point>::iterator pt = point_cloud.points.begin();
-       pt < point_cloud.points.end(); pt++) {
-    max_found = MAX(max_found, pt->range);
-    min_found = MIN(min_found, pt->range);
-  }
-
-  for (auto point : point_cloud.points) {
-    assert(point.intensity <= 255);
-    uchar intensity = point.intensity;
-    auto range = (point.range - min_found) / (max_found - min_found) * 255;
     auto xyziPoint = PointXYZRGB(intensity, intensity, intensity);
+
     xyziPoint.x = point.x;
     xyziPoint.y = point.y;
     xyziPoint.z = point.z;
+
     new_cloud->push_back(xyziPoint);
   }
 
@@ -353,25 +367,19 @@ PointCloud<PointXYZRGB> *velodyne::Velodyne::toPointsXYZRGB() {
 }
 
 // all intensities to range min-max
-void velodyne::Velodyne::normalizeIntensity(float min, float max) {
+void Velodyne::normalizeIntensity(float min, float max) {
   float min_found = INFINITY;
   float max_found = -INFINITY;
 
-  for (PointCloud<Point>::iterator pt = point_cloud.points.begin();
-       pt < point_cloud.points.end(); pt++) {
-    max_found = MAX(max_found, pt->intensity);
-    min_found = MIN(min_found, pt->intensity);
+  for (auto pt : point_cloud) {
+    max_found = MAX(max_found, pt.intensity);
+    min_found = MIN(min_found, pt.intensity);
   }
 
-  for (PointCloud<Point>::iterator pt = point_cloud.points.begin();
-       pt < point_cloud.points.end(); pt++) {
-    pt->intensity =
-        (pt->intensity - min_found) / (max_found - min_found) *
+  for (auto &pt : point_cloud) {
+    pt.intensity = (pt.intensity - min_found) / (max_found - min_found) *
             (max - min) + min;
-//		cerr << pt->intensity << " ";
   }
-
-//	cerr << endl;
 }
 
 /**
@@ -379,8 +387,8 @@ void velodyne::Velodyne::normalizeIntensity(float min, float max) {
  * @param thresh hranice
  * @return
  */
-velodyne::Velodyne velodyne::Velodyne::threshold(float thresh) {
-  PointCloud<Point> new_cloud;
+Velodyne Velodyne::threshold(float thresh) {
+  oldVPointCloud new_cloud;
 
   for (auto point : point_cloud.points) {
     if (point.intensity > thresh) {
@@ -390,14 +398,7 @@ velodyne::Velodyne velodyne::Velodyne::threshold(float thresh) {
   return Velodyne(new_cloud);
 }
 
-void velodyne::Velodyne::detectPlanes(cv::Mat projection) {
-  PointCloud<Point> visible_points;
-  this->project(projection, Rect(0, 0, 640, 480), &visible_points);
-  // ...
-}
-
-vector<velodyne::Velodyne>
-velodyne::Velodyne::depthSegmentation(int segment_counts) {
+vector<Velodyne> Velodyne::depthSegmentation(int segment_counts) {
   vector<Velodyne> segments(segment_counts);
 
   Mat ranges(point_cloud.size(), 1, CV_32FC1);
@@ -423,11 +424,10 @@ velodyne::Velodyne::depthSegmentation(int segment_counts) {
   return segments;
 }
 
-PointCloud<PointXYZRGB>
-velodyne::Velodyne::colour(cv::Mat frame_rgb, cv::Mat P) {
+PointCloud<PointXYZRGB> Velodyne::colour(cv::Mat frame_rgb, cv::Mat P) {
   PointCloud<PointXYZRGB> color_cloud;
 
-  for (PointCloud<Point>::iterator pt = this->point_cloud.begin();
+  for (auto pt = this->point_cloud.begin();
        pt < this->point_cloud.end(); pt++) {
 
     Point2f xy = Velodyne::Velodyne::projectf(*pt, P);
@@ -443,18 +443,19 @@ velodyne::Velodyne::colour(cv::Mat frame_rgb, cv::Mat P) {
   return color_cloud;
 }
 
-PointCloud<PointXYZRGB>
-velodyne::Velodyne::colourByFishEye(cv::Mat frame_rgb,
-                                    cv::Mat D,
-                                    cv::Mat K,
-                                    cv::Mat rvec,
-                                    cv::Mat tvec) {
+PointCloud<PointXYZRGB> Velodyne::colourByFishEye(
+    cv::Mat frame_rgb,
+    cv::Mat D,
+    cv::Mat K,
+    cv::Mat rvec,
+    cv::Mat tvec
+) {
   PointCloud<PointXYZRGB> color_cloud;
 
   vector<Point3f> inputPointCloud;
 
   for (auto point:this->point_cloud) {
-    inputPointCloud.push_back(Point3f(point.x, point.y, point.z));
+    inputPointCloud.emplace_back(point.x, point.y, point.z);
   }
 
   Mat projectedPoints;
@@ -476,8 +477,7 @@ velodyne::Velodyne::colourByFishEye(cv::Mat frame_rgb,
     Point2i xy = projectedPoints.at<Point2f>(0, (int) iter);
     Vec3b rgb;
 
-    if (xy.y < 0 || xy.x < 0 || xy.y > frame_rgb.rows
-        || xy.x > frame_rgb.cols) {
+    if (xy.y < 0 || xy.x < 0 || xy.y > frame_rgb.rows || xy.x > frame_rgb.cols) {
       rgb = rgbDefault;
     } else {
       rgb = image::Image::atf(frame_rgb, xy);
@@ -493,20 +493,20 @@ velodyne::Velodyne::colourByFishEye(cv::Mat frame_rgb,
   return color_cloud;
 }
 
-velodyne::Velodyne velodyne::Velodyne::transform(cv::Mat tvec, cv::Mat rvec) {
+Velodyne Velodyne::transform(cv::Mat tvec, cv::Mat rvec) {
   ASSERT_IS_VEC_3D(tvec);
   ASSERT_IS_VEC_3D(rvec);
   return transform(
-      (float) tvec.at<double>(X),
-      (float) tvec.at<double>(Y),
-      (float) tvec.at<double>(Z),
-      (float) rvec.at<double>(X),
-      (float) rvec.at<double>(Y),
-      (float) rvec.at<double>(Z)
+      tvec.at<double>(X),
+      tvec.at<double>(Y),
+      tvec.at<double>(Z),
+      rvec.at<double>(X),
+      rvec.at<double>(Y),
+      rvec.at<double>(Z)
   );
 }
 
-void velodyne::Velodyne::view(float trashHold, const char *windowTitle) {
+void Velodyne::view(float trashHold, const char *windowTitle) {
   auto cloud_ptr =
       ::pcl::PointCloud<pcl::PointXYZRGB>::Ptr(this->toPointsXYZRGB());
 
@@ -519,9 +519,12 @@ void velodyne::Velodyne::view(float trashHold, const char *windowTitle) {
       rgb(cloud_ptr);
 
   viewer->addPointCloud<::pcl::PointXYZRGB>(cloud_ptr, rgb, "sample cloud");
-  viewer->setPointCloudRenderingProperties(::pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
-                                           3,
-                                           "sample cloud");
+  viewer->setPointCloudRenderingProperties(
+      ::pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
+      3,
+      "sample cloud"
+  );
+
   viewer->addCoordinateSystem(0.3);
   //viewer->initCameraParameters();
   while (!viewer->wasStopped()) {
@@ -531,7 +534,7 @@ void velodyne::Velodyne::view(float trashHold, const char *windowTitle) {
   }
 }
 
-void velodyne::Velodyne::viewMarker(vector<Point3f> centers3D,
+void Velodyne::viewMarker(vector<Point3f> centers3D,
                                     vector<float> radii3D,
                                     const char *windowTitle) {
   auto cloud_ptr =
@@ -546,9 +549,11 @@ void velodyne::Velodyne::viewMarker(vector<Point3f> centers3D,
       rgb(cloud_ptr);
 
   viewer->addPointCloud<::pcl::PointXYZRGB>(cloud_ptr, rgb, "sample cloud");
-  viewer->setPointCloudRenderingProperties(::pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
-                                           3,
-                                           "sample cloud");
+  viewer->setPointCloudRenderingProperties(
+      ::pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
+      3,
+      "sample cloud"
+  );
   viewer->addCoordinateSystem(0.3);
 
   ModelCoefficients circle_1;
@@ -571,29 +576,37 @@ void velodyne::Velodyne::viewMarker(vector<Point3f> centers3D,
   circle_4.values[6] = radii3D[3];
 
   viewer->addCylinder(circle_4, "c4");
-  viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR,
-                                      1,
-                                      0,
-                                      0,
-                                      "c4");
+  viewer->setShapeRenderingProperties(
+      pcl::visualization::PCL_VISUALIZER_COLOR,
+      1,
+      0,
+      0,
+      "c4"
+  );
   viewer->addCylinder(circle_3, "c3");
-  viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR,
-                                      0,
-                                      1,
-                                      0,
-                                      "c3");
+  viewer->setShapeRenderingProperties(
+      pcl::visualization::PCL_VISUALIZER_COLOR,
+      0,
+      1,
+      0,
+      "c3"
+  );
   viewer->addCylinder(circle_2, "c2");
-  viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR,
-                                      0,
-                                      0,
-                                      1,
-                                      "c2");
+  viewer->setShapeRenderingProperties(
+      pcl::visualization::PCL_VISUALIZER_COLOR,
+      0,
+      0,
+      1,
+      "c2"
+  );
   viewer->addCylinder(circle_1, "c1");
-  viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR,
-                                      0.5,
-                                      0.5,
-                                      0,
-                                      "c1");
+  viewer->setShapeRenderingProperties(
+      pcl::visualization::PCL_VISUALIZER_COLOR,
+      0.5,
+      0.5,
+      0,
+      "c1"
+  );
 
   //viewer->initCameraParameters();
   while (!viewer->wasStopped()) {
@@ -603,7 +616,9 @@ void velodyne::Velodyne::viewMarker(vector<Point3f> centers3D,
   }
 }
 
-velodyne::Velodyne::Velodyne(const Velodyne &orig) {
+
+
+Velodyne::Velodyne(const Velodyne &orig) {
   point_cloud = oldVPointCloud(orig.point_cloud);
 }
 

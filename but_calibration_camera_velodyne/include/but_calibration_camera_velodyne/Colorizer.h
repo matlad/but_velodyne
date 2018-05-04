@@ -22,14 +22,24 @@ namespace but::calibration_camera_velodyne {
 class Colorizer {
 
   /**
-   * @brief Obraz pomocí něho bude mračno bodů obarveno.
+   * @brief Přední část obrazu pomocí něho bude mračno bodů obarveno.
    */
-  cv::Mat image;
+  cv::Mat frontImage;
 
   /**
-   * @brief Parametry, kamery pomoci které byl pořízen snímek k obarvení.
+   * @brief Zadní část obrazu pomocí něho bude mračno bodů obarveno.
    */
-  CameraPtr camera;
+  cv::Mat backImage;
+
+  /**
+   * @brief Parametry, kamery pomoci které byl pořízen přední snímek k obarvení.
+   */
+  CameraPtr frontCamera;
+
+  /**
+  * @brief Parametry, kamery pomoci které byl pořízen zadní snímek k obarvení.
+  */
+  CameraPtr backCamera;
 
   /**
    * @brief Mračno bodů k obarvení k obarvení.
@@ -42,13 +52,25 @@ class Colorizer {
    * @brief Nastaví obraz pomocí něhož se bude obarvovat.
    * @param image
    */
-  void setImage(cv::Mat &image);
+  void setFrontImage(cv::Mat &image);
 
   /**
-   * @brief Nastaví Parametry, kamery pomoci které byl pořízen snímek k obarvení.
+   * @brief Nastaví obraz pomocí něhož se bude obarvovat.
+   * @param image
+   */
+  void setBackImage(cv::Mat &image);
+
+  /**
+   * @brief Nastaví parametry, kamery pomoci které byl pořízen přední snímek k obarvení.
    * @param camera
    */
-  void setCamera(CameraPtr camera);
+  void setFrontCamera(CameraPtr camera);
+
+  /**
+   * @brief Nastaví parametry, kamery pomoci které byl pořízen zadní snímek k obarvení.
+   * @param camera
+   */
+  void setBackCamera(CameraPtr camera);
 
   /**
    * @brief Nastaví mračno bodů k obarvení.

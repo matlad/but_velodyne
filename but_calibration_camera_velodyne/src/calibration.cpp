@@ -81,8 +81,8 @@ int main(int argc, char *argv[]) {
   auto circleRadius = strtod(argv[ARG_CIRCLES_RADIUS], nullptr);
 
   Calibrator calibrator(circleDistance, circleRadius);
-  calibrator.setCamera(camera);
-  calibrator.setImage(image);
+  calibrator.setFrontCamera(camera);
+  calibrator.setFrontImage(image);
   calibrator.setPointCloud(pointCloud);
 
   Calibration6DoF calibration6DoF = calibrator.calibration(true);

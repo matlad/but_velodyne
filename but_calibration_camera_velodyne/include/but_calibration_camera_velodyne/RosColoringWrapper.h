@@ -32,10 +32,13 @@ class RosColoringWrapper {
       const std::vector<double> &sixDoF
   );
 
-  void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &imageInfo);
+  void frontCameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &imageInfo);
   void pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr &pointCloud);
-  void imageFrameCallback(const sensor_msgs::ImageConstPtr &image);
+  void frontImageFrameCallback(const sensor_msgs::ImageConstPtr &image);
 
+  CameraPtr imageInfoToCamera(const sensor_msgs::CameraInfoConstPtr &imageInfo) const;
+  void backCameraInfoCallback(const sensor_msgs::CameraInfoConstPtr &imageInfo);
+  void backImageFrameCallback(const sensor_msgs::ImageConstPtr &image);
 };
 
 }

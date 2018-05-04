@@ -32,11 +32,7 @@ using cv::Point2f;
 using cv::Point3f;
 using cv::Point3d;
 
-/**
- * @brief Nastaví obraz kamery pro kalibraci
- * @param image
- */
-void Calibrator::setImage(Mat image) {
+void Calibrator::setFrontImage(Mat image) {
   image.copyTo(rawImg);
   this->image = std::move(image);
   undistortImage();
@@ -48,10 +44,6 @@ void Calibrator::setImage(Mat image) {
   this->edgeImage = new image::Image(img.computeIDTEdgeImage());
 }
 
-/**
- * @brief Nastaví point cloud pro klaibraci
- * @param pointCloud
- */
 void Calibrator::setPointCloud(
     pcl::PointCloud<velodyne::Point> pointCloud
 ) {
@@ -65,17 +57,13 @@ void Calibrator::setPointCloud(
   //this->pointCloud.view(0);
 }
 
-/**
- * @brief Nastaví (vnitřní parametry kamery)
- * @param camera
- */
-void Calibrator::setCamera(CameraPtr camera) {
+
+void Calibrator::setFrontCamera(CameraPtr camera) {
   this->camera = camera;
 }
 
-/**
- * @brief provede opravu zkreslení obrazu
- */
+
+
 void Calibrator::undistortImage() {
 
   cv::fisheye::undistortImage(image, image, camera->K, camera->D, camera->K);
@@ -97,8 +85,8 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
   Colorizer colorizer;
 
   colorizer.setPointCloud(rawPCl);
-  colorizer.setImage(rawImg);
-  colorizer.setCamera(camera);
+  colorizer.setFrontImage(rawImg);
+  colorizer.setFrontCamera(camera);
 
   vector<double> radii2D;
   vector<Point2f> centers2D;
@@ -201,6 +189,35 @@ Calibration6DoF Calibrator::calibration(bool doRefinement = false) {
   cout << "solvePnP - AP3P" << endl;
   calib.print();
 
+  while(true) {
+
+    double x, y, z, rx, ry, rz;
+
+    cout << "\nx?\n";
+    cin >> x;
+    cout << "\ny?\n";
+    cin >> y;
+    cout << "\nz?\n";
+    cin >> z;
+
+    cout << "\nrx?\n";
+    cin >> rx;
+    cout << "\nry?\n";
+    cin >> ry;
+    cout << "\nrz?\n";
+    cin >> rz;
+
+    tVec.at<double>(X) += x;
+    tVec.at<double>(Y) += y;
+    tVec.at<double>(Z) += z;
+    rVec.at<double>(X) += rx;
+    rVec.at<double>(Y) += ry;
+    rVec.at<double>(Z) += rz;
+
+    calib.set(tVec, rVec, getSimilarity(tVec, rVec, "solvePnP - AP3P- man"));
+    cout << "solvePnP - AP3P - man" << endl;
+    calib.print();
+  }
   camera->rvec = rVec;
   camera->tvec = tVec;
   colorCloud = new pcl::PointCloud<pcl::PointXYZRGB>(colorizer.colorize());
@@ -385,8 +402,7 @@ double Calibrator::getSimilarity(
     if (pt.z > 0 && xy.inside(frame)) {
 
       assert(pt.intensity <= 1);
-      CC += img.at<cv::Vec3b>(xy)[RED]
-          * pt.intensity; // šedý obrázek rgb sou si rovny vezmem jeden kanál
+      CC += img.at<cv::Vec3b>(xy)[RED] * pt.intensity; // šedý obrázek rgb sou si rovny vezmem jeden kanál
       color.at<cv::Vec3b>(xy)[BLUE] =
           pt.intensity < POINTCLOUD_EDGE_TRASH_HOLD ? 255_rgb_c : 0_rgb_c;
       color.at<cv::Vec3b>(xy)[GREEN] =
@@ -439,94 +455,73 @@ void Calibrator::findTranslation(
   tVec.at<double>(Y) /= image.size();
 }
 
-void Calibrator::calibrationRefinement(cv::Mat tVec,
-                                       cv::Mat rVec,
-                                       float max_translation,
-                                       float max_rotation,
-                                       unsigned steps,
-                                       Calibration6DoF &best_calibration,
-                                       Calibration6DoF &average) {
+void Calibrator::calibrationRefinement(
+    cv::Mat tVec,
+    cv::Mat rVec,
+    double max_translation,
+    double max_rotation,
+    unsigned steps,
+    Calibration6DoF &best_calibration,
+    Calibration6DoF &average
+) {
 
   IN_PROGRES_INIT();
 
-  float x_rough = static_cast<float>(tVec.at<double>(X));
-  float y_rough = static_cast<float>(tVec.at<double>(Y));
-  float z_rough = static_cast<float>(tVec.at<double>(Z));
+  double x_rough = tVec.at<double>(X);
+  double y_rough = tVec.at<double>(Y);
+  double z_rough = tVec.at<double>(Z);
 
-  float x_rough_r = static_cast<float>(rVec.at<double>(X));
-  float y_rough_r = static_cast<float>(rVec.at<double>(Y));
-  float z_rough_r = static_cast<float>(rVec.at<double>(Z));
+  double x_rough_r = rVec.at<double>(X);
+  double y_rough_r = rVec.at<double>(Y);
+  double z_rough_r = rVec.at<double>(Z);
 
   auto P = camera->P;
 
   auto image = image::Image(this->image);
   image = image::Image(image.computeIDTEdgeImage());
 
-  float x_min = x_rough - max_translation;
-  float y_min = y_rough - max_translation;
-  float z_min = z_rough - max_translation;
-  float x_rot_min = x_rough_r - max_rotation;
-  float y_rot_min = y_rough_r - max_rotation;
-  float z_rot_min = z_rough_r - max_rotation;
+  double x_min = x_rough - max_translation;
+  double y_min = y_rough - max_translation;
+  double z_min = z_rough - max_translation;
+  double x_rot_min = x_rough_r - max_rotation;
+  double y_rot_min = y_rough_r - max_rotation;
+  double z_rot_min = z_rough_r - max_rotation;
 
-  float step_transl = max_translation * 2 / (steps - 1);
-  float step_rot = max_rotation * 2 / (steps - 1);
+  double step_transl = max_translation * 2 / (steps - 1);
+  double step_rot = max_rotation * 2 / (steps - 1);
 
   velodyne::Velodyne transformed =
       edgePointCloud.transform(x_rough, y_rough, z_rough, 0, 0, 0);
   double rough_val = Similarity::edgeSimilarity(image, transformed, P);
 
-  best_calibration.set(
-      static_cast<double>(x_rough),
-      static_cast<double>(y_rough),
-      static_cast<double>(z_rough),
-      0,
-      0,
-      0,
-      rough_val
-  );
+  best_calibration.set(x_rough, y_rough, z_rough, 0, 0, 0, rough_val);
 
   int counter = 0;
 
-  float x = x_min;
+  double x = x_min;
   for (size_t xi = 0; xi < steps; xi++) {
 
-    float y = y_min;
+    double y = y_min;
     for (size_t yi = 0; yi < steps; yi++) {
 
-      float z = z_min;
+      double z = z_min;
       for (size_t zi = 0; zi < steps; zi++) {
 
-        float x_r = x_rot_min;
+        double x_r = x_rot_min;
         for (size_t x_ri = 0; x_ri < steps; x_ri++) {
 
-          float y_r = y_rot_min;
+          double y_r = y_rot_min;
           for (size_t y_ri = 0; y_ri < steps; y_ri++) {
 
-            float z_r = z_rot_min;
+            double z_r = z_rot_min;
             for (size_t z_ri = 0; z_ri < steps; z_ri++) {
 
               transformed = edgePointCloud.transform(x, y, z, x_r, y_r, z_r);
               double value = Similarity::edgeSimilarity(image, transformed, P);
-              Calibration6DoF calibration(
-                  static_cast<double>(x),
-                  static_cast<double>(y),
-                  static_cast<double>(z),
-                  static_cast<double>(x_r),
-                  static_cast<double>(y_r),
-                  static_cast<double>(z_r),
-                  value
-              );
+              Calibration6DoF calibration(x, y, z, x_r, y_r, z_r, value);
+
               if (value > best_calibration.value) {
-                best_calibration.set(
-                    static_cast<double>(x),
-                    static_cast<double>(y),
-                    static_cast<double>(z),
-                    static_cast<double>(x_r),
-                    static_cast<double>(y_r),
-                    static_cast<double>(z_r),
-                    value
-                );
+                best_calibration.set(x, y, z, x_r, y_r, z_r, value);
               }
 
               if (value > rough_val) {

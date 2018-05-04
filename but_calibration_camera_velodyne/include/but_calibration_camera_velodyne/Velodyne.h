@@ -47,15 +47,15 @@ class Velodyne {
   Velodyne(const Velodyne &orig);
 
   Velodyne transform(
-      float x,
-      float y,
-      float z,
-      float rot_x,
-      float rot_y,
-      float rot_z
+      double x,
+      double y,
+      double z,
+      double rot_x,
+      double rot_y,
+      double rot_z
   );
 
-  Velodyne transform(std::vector<float> DoF);
+  Velodyne transform(std::array<double, 6> DoF);
 
   /**
    * @param tvec vektor transformace 1x3 [x,y,z]
@@ -93,11 +93,10 @@ class Velodyne {
   cv::Mat project(
       cv::Mat projection_matrix,
       cv::Rect frame,
-      ::pcl::PointCloud<Point> *visible_points = NULL
+      oldVPointCloud *visible_points = NULL
   );
 
-  cv::Mat
-  project(cv::Mat projection_matrix, cv::Rect frame, cv::Mat plane);
+  cv::Mat project(cv::Mat projection_matrix, cv::Rect frame, cv::Mat plane);
 
   void intensityByDiff(Processing processing);
 
@@ -127,15 +126,15 @@ class Velodyne {
     ::pcl::io::savePCDFile(filename, point_cloud);
   }
 
-  ::pcl::PointCloud<Point>::iterator begin() {
+  oldVPointCloud::iterator begin() {
     return point_cloud.begin();
   }
 
-  ::pcl::PointCloud<Point>::iterator end() {
+  oldVPointCloud::iterator end() {
     return point_cloud.end();
   }
 
-  ::pcl::PointCloud<Point> getPointCloud() {
+  oldVPointCloud getPointCloud() {
     return point_cloud;
   }
 
@@ -207,12 +206,16 @@ class Velodyne {
     ::pcl::visualization::PointCloudColorHandlerRGBField<::pcl::PointXYZRGB>
         rgb(pointCloudPtr);
 
-    viewer->addPointCloud<::pcl::PointXYZRGB>(pointCloudPtr,
-                                              rgb,
-                                              "sample cloud");
-    viewer->setPointCloudRenderingProperties(::pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
-                                             3,
-                                             "sample cloud");
+    viewer->addPointCloud<::pcl::PointXYZRGB>(
+        pointCloudPtr,
+        rgb,
+        "sample cloud"
+    );
+    viewer->setPointCloudRenderingProperties(
+        ::pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
+        3,
+        "sample cloud"
+    );
     viewer->addCoordinateSystem(0.3);
     viewer->initCameraParameters();
     while (!viewer->wasStopped()) {
@@ -249,6 +252,10 @@ class Velodyne {
   static const unsigned RINGS_COUNT = 32;
 
   std::vector<std::vector<Point *> > getRings();
+
+  /**
+   * Zobrazí detekovaný marker
+   */
   void viewMarker(
       std::vector<cv::Point3f> centers,
       std::vector<float> radiuses,
@@ -269,10 +276,16 @@ class Velodyne {
 
   void convolution();
   void intensityByRangeDiff2();
+  void convertTo(std::vector<cv::Point3f> *destination);
+  void convertTo(std::vector<cv::Point3d> *destination);
+
+  Point& operator [](int idx) {
+    return point_cloud[idx];
+  }
+
 
  protected:
-  ::pcl::PointCloud<Point> point_cloud;
-
+  oldVPointCloud point_cloud;
 };
 
 } /* NAMESPACE Velodyne */

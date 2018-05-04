@@ -55,8 +55,10 @@ int main(int argc, char **argv) {
     }
   }
 
-  string CAMERA_FRAME_TOPIC;
-  string CAMERA_INFO_TOPIC;
+  string FRONT_CAMERA_FRAME_TOPIC;
+  string FRONT_CAMERA_INFO_TOPIC;
+  string BACK_CAMERA_FRAME_TOPIC;
+  string BACK_CAMERA_INFO_TOPIC;
   string VELODYNE_TOPIC;
 
   // marker properties:
@@ -65,12 +67,20 @@ int main(int argc, char **argv) {
 
   ros::NodeHandle n;
   n.getParam(
-      "/but_calibration_camera_velodyne/camera_frame_topic",
-      CAMERA_FRAME_TOPIC
+      "/but_calibration_camera_velodyne/front_camera_frame_topic",
+      FRONT_CAMERA_FRAME_TOPIC
   );
   n.getParam(
-      "/but_calibration_camera_velodyne/camera_info_topic",
-      CAMERA_INFO_TOPIC
+      "/but_calibration_camera_velodyne/front_camera_info_topic",
+      FRONT_CAMERA_INFO_TOPIC
+  );
+  n.getParam(
+      "/but_calibration_camera_velodyne/back_camera_frame_topic",
+      BACK_CAMERA_FRAME_TOPIC
+  );
+  n.getParam(
+      "/but_calibration_camera_velodyne/back_camera_info_topic",
+      BACK_CAMERA_INFO_TOPIC
   );
   n.getParam(
       "/but_calibration_camera_velodyne/velodyne_topic",
@@ -88,16 +98,22 @@ int main(int argc, char **argv) {
   ROS_INFO_STREAM("Subscribe");
 
   message_filters::Subscriber<sensor_msgs::Image>
-      image_sub(n, CAMERA_FRAME_TOPIC, 1);
+      front_image_sub(n, FRONT_CAMERA_FRAME_TOPIC, 1);
   message_filters::Subscriber<sensor_msgs::CameraInfo>
-      info_sub(n, CAMERA_INFO_TOPIC, 1);
+      front_info_sub(n, FRONT_CAMERA_INFO_TOPIC, 1);
+  message_filters::Subscriber<sensor_msgs::Image>
+      back_image_sub(n, BACK_CAMERA_FRAME_TOPIC, 1);
+  message_filters::Subscriber<sensor_msgs::CameraInfo>
+      back_info_sub(n, BACK_CAMERA_INFO_TOPIC, 1);
   message_filters::Subscriber<sensor_msgs::PointCloud2>
       cloud_sub(n, VELODYNE_TOPIC, 1);
 
   ROS_INFO_STREAM(
       "Subscribed:"
-          << "\n\t" << CAMERA_FRAME_TOPIC
-          << "\n\t" << CAMERA_INFO_TOPIC
+          << "\n\t" << FRONT_CAMERA_FRAME_TOPIC
+          << "\n\t" << FRONT_CAMERA_INFO_TOPIC
+          << "\n\t" << BACK_CAMERA_FRAME_TOPIC
+          << "\n\t" << BACK_CAMERA_INFO_TOPIC
           << "\n\t" << VELODYNE_TOPIC
   );
 
@@ -108,7 +124,7 @@ int main(int argc, char **argv) {
   > MySyncPolicy;
 
   Synchronizer<MySyncPolicy>
-      sync(MySyncPolicy(10), image_sub, info_sub, cloud_sub);
+      sync(MySyncPolicy(10), front_image_sub, front_info_sub, back_image_sub, back_info_sub, cloud_sub);
 
   RosCalibratorWrapper calibrator(STRAIGHT_DISTANCE, RADIUS);
 
@@ -117,7 +133,9 @@ int main(int argc, char **argv) {
       &calibrator,
       _1,
       _2,
-      _3
+      _3,
+      _4,
+      _5
   ));
 
   ros::spin();
